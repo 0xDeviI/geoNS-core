@@ -10,6 +10,6 @@ In order to build the project you need the following packages to be installed on
 ## Build
 In order to build the project, you need all the 'development prerequisites' packages to be installed on your system. Then you can build the core using following command:
 ```bash
-make build
+make
 ```
-within a successful build, you should have a 'build/' directory that contains geons-core.
+within a successful build, you should have a 'bin/' directory that contains geons-core.
