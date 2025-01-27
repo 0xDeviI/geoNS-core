@@ -57,3 +57,4 @@ build/
 playground/
 .vscode/
 test.c
+obj/
