@@ -19,6 +19,7 @@
 #include "../core/core.h"
 
 
+extern uchar is_io_initialized;
 extern uchar cwd[MAX_SYS_PATH_LENGTH];
 
 uchar* exec(uchar* format, ...);

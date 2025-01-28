@@ -1,20 +1,26 @@
 # Compiler and flags
 CC = clang
-CFLAGS = -Wall -Wextra -O2 -I src/libs -I abstraction $(shell pkg-config --cflags sqlite3 openssl) -fsanitize=address,undefined
-LDFLAGS = $(shell pkg-config --libs sqlite3 openssl) -fsanitize=address,undefined
+CFLAGS = -Wall -Wextra -O2 -I src/libs -I abstraction $(shell pkg-config --cflags sqlite3 openssl)
+LDFLAGS = -Ilibs -Iabstraction $(shell pkg-config --libs sqlite3 openssl)
 
 # Directories
 SRC_DIR = src
-LIB_DIR = src/libs
-OBJ_DIR = obj
+LIB_DIR = $(SRC_DIR)/libs
+OBJ_DIR = build
 BIN_DIR = bin
 
 # Target executable
 TARGET = $(BIN_DIR)/geoNS-core
 
+LIBS = $(wildcard ${LIB_DIR}/**/*.c)
+EXCLUDED_LIBS = $(wildcard ${LIB_DIR}/unity/*.c)
+
 # Source files
 SRCS = $(SRC_DIR)/main.c \
-       $(wildcard ${SRC_DIR}/libs/**/*.c)
+       $(LIBS)
+
+# Excluding libs
+SRCS := $(filter-out $(EXCLUDED_LIBS), $(SRCS))
 
 # Object files
 OBJS = $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(SRCS))

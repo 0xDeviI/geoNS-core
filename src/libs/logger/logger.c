@@ -5,6 +5,9 @@ uchar log_file_name[MAX_LOG_FILE_NAME_LENGTH];
 
 
 void init_logger(void) {
+    if (!is_io_initialized)
+        return;
+
     time_t timer = time(NULL);
     struct tm *tm_info = localtime(&timer);
     strftime(log_file_name, MAX_LOG_FILE_NAME_LENGTH, "%Y-%m-%d_%H-%M-%S.log", tm_info);
@@ -12,6 +15,9 @@ void init_logger(void) {
 
 
 void msglog(LogType type, uchar *message, ...) {
+    if (!is_io_initialized)
+        return;
+    
     if ((type == DEBUG && is_debugging) || (type != DEBUG)) {
         uchar log_file_path[MAX_SYS_PATH_LENGTH];
         get_cwd_path(log_file_path, sizeof(log_file_path));
@@ -35,7 +41,6 @@ void msglog(LogType type, uchar *message, ...) {
         FILE *log_file = fopen(log_file_path, "a");
         
         if (log_file == NULL) {
-            printf("path: %s\n", log_file_path);
             printf("Failed to open log file.");
             return;
         }

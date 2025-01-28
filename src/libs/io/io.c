@@ -1,6 +1,7 @@
 #include "io.h"
 
 
+uchar is_io_initialized = 0;
 uchar cwd[MAX_SYS_PATH_LENGTH];
 
 
@@ -128,4 +129,5 @@ void init_io_system(const char *exec_path) {
             break;
         else
             cwd[i] = '\0';
+    is_io_initialized = 1;
 }

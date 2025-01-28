@@ -58,3 +58,10 @@ playground/
 .vscode/
 test.c
 obj/
+
+# Ignore everything in the tests directory
+tests/*
+# Allow .c files
+!tests/*.c
+# Allow Makefile
+!tests/Makefile

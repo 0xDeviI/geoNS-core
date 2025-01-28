@@ -17,7 +17,7 @@ typedef enum eValueType {
 
 typedef struct sConfig
 {
-    uchar geons_server_addr[MAX_IPV6_LENGTH];
+    uchar *geons_server_addr;
     ushort node_gateway_port;
     ushort data_gateway_port;
 } Config;

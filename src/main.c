@@ -17,13 +17,12 @@ int main(int argc, const char *argv[]) {
     init_logger();
     init_config_manager();
 
-    char server = -1;
-    char client = -1;
-    char debug = -1;
+    char server = 0;
+    char client = 0;
     struct argparse_option options[] = {
         OPT_HELP(),
         OPT_GROUP("Core options"),
-        OPT_BOOLEAN('d', "debug", &debug, "enables debugging mode", NULL, 0, 0),
+        OPT_BOOLEAN('d', "debug", &is_debugging, "enables debugging mode", NULL, 0, 0),
         OPT_GROUP("Server options"),
         OPT_BOOLEAN('s', "server", &server, "starts geoNS server", NULL, 0, 0),
         OPT_GROUP("Client options"),
@@ -35,12 +34,10 @@ int main(int argc, const char *argv[]) {
     argparse_init(&argparse, options, usages, 0);
     argparse_describe(&argparse, "\ngeoNS (Geolocational Net Stat) is a decentralized service that monitors internet quality.", "\nThe core service is responsible for handling decentralized operations, log collection and API provision.");
     argc = argparse_parse(&argparse, argc, argv);
-    if (debug != -1)
-        is_debugging = 1;
 
     msglog(DEBUG, "geoNS-core started.");
 
-    if (server != -1) {
+    if (server) {
         //* Running Server
         HTTPServer *server = create_http_server("0.0.0.0", 8000, "./");
         if (server != NULL) {

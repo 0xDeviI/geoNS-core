@@ -14,9 +14,9 @@
 
 typedef struct sPeerInfo
 {
-    uchar server_addr[MAX_IPV6_LENGTH];
+    uchar *server_addr;
     ushort server_port;
-    uchar client_addr[MAX_IPV6_LENGTH];
+    uchar *client_addr;
     ushort client_port;
 } PeerInfo;
 
@@ -49,7 +49,7 @@ typedef struct sSocketServer
     int addrlen;
     ushort port;
     uchar *server_addr;
-    uchar is_alive;
+    uchar is_alive: 1;
     thread thread;
     ServerCallback *callback;
 } SocketServer;

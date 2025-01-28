@@ -44,44 +44,44 @@ void add_connection(SocketConnection **head, SocketConnection *connection) {
 
 
 uchar remove_connection(SocketConnection **head, SocketConnection *connection) {
-    if (*head != NULL) {
-        SocketConnection *current = *head;
-        SocketConnection *previous = NULL;
+    if (*head == NULL)
+        return 0;
 
-        while (current != connection) {
-            previous = current;
-            current = current->next;
-            if (current == NULL)
-                return 0;
-        }
+    SocketConnection *current = *head;
+    SocketConnection *previous = NULL;
 
-        if (current->connection_status == CONNECTION_ESTABLISHED) {
-            kill_socket(current->fd);
-        }
+    while (current != connection) {
+        previous = current;
+        current = current->next;
+        if (current == NULL)
+            return 0;
+    }
 
-        if (current->next != NULL) {
-            if (previous == NULL)
-                *head = current->next;
-            else
-                previous->next = current->next;
+    if (current->connection_status == CONNECTION_ESTABLISHED) {
+        kill_socket(current->fd);
+    }
+
+    if (current->next != NULL) {
+        if (previous == NULL)
+            *head = current->next;
+        else
+            previous->next = current->next;
         
-            free(current);
-            current = NULL;
+        free(current);
+        current = NULL;
+    }
+    else {
+        if (previous == NULL) {
+            free(*head);
+            *head = NULL;
         }
         else {
-            if (previous == NULL) {
-                free(*head);
-                *head = NULL;
-            }
-            else {
-                free(current);
-                current = NULL;
-                previous->next = NULL;
-            }
+            free(current);
+            current = NULL;
+            previous->next = NULL;
         }
-        return 1;
     }
-    return 0;
+    return 1;
 }
 
 
@@ -105,9 +105,11 @@ void *server_socket_thread(void *arg) {
         ClientData *client_data = (ClientData *) memalloc(sizeof(ClientData));
         client_data->server_callback = server->callback;
         client_data->head = &server->connections;
-        strncpy(connection->peer_info.server_addr, server->server_addr, MAX_IPV6_LENGTH);
+        // strncpy(connection->peer_info.server_addr, server->server_addr, MAX_IPV6_LENGTH);
+        connection->peer_info.server_addr = server->server_addr;
         connection->peer_info.server_port = server->port;
-        strncpy(connection->peer_info.client_addr, inet_ntoa(server->address.sin_addr), MAX_IPV6_LENGTH);
+        // strncpy(connection->peer_info.client_addr, inet_ntoa(server->address.sin_addr), MAX_IPV6_LENGTH);
+        connection->peer_info.client_addr = inet_ntoa(server->address.sin_addr);
         connection->peer_info.client_port = ntohs(server->address.sin_port);
         client_data->current = connection;
 
@@ -145,8 +147,7 @@ void handle_server_socket(SocketServer *server, ServerCallback *server_callback)
 
 SocketServer *open_server_socket(uchar *server_addr, ushort port) {
     SocketServer *server = (SocketServer *) memalloc(sizeof(SocketServer));
-    server->server_addr = (uchar *) memalloc(strlen(server_addr));
-    strncpy(server->server_addr, server_addr, strlen(server_addr));
+    server->server_addr = server_addr;
     server->addrlen = sizeof(server->address);
     server->port = port;
     server->is_alive = 0;
@@ -212,8 +213,6 @@ void kill_socket_server(SocketServer *server) {
                 );
         }
         kill_socket(server->fd);
-        if (server->server_addr != NULL)
-            free(server->server_addr);
         free(server);
         server = NULL;
     }
@@ -255,8 +254,7 @@ void *handle_client(void *arg) {
 SocketServer *connect_to_socket_server(uchar *server_addr, ushort port) {
     SocketServer *server = (SocketServer *) memalloc(sizeof(SocketServer));
     server->port = port;
-    server->server_addr = (uchar *) memalloc(strlen(server_addr));
-    strncpy(server->server_addr, server_addr, strlen(server_addr));
+    server->server_addr = server_addr;
     server->fd = 0;
     server->connections = NULL;
     struct sockaddr_in serv_addr;

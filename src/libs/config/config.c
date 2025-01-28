@@ -23,7 +23,7 @@ void load_config(void) {
     ushort node_server_port = json_object_dotget_number(config_json_object, "server.node.server_port");
     ushort data_server_port = json_object_dotget_number(config_json_object, "server.data.server_port");
 
-    strncpy(CONFIG->geons_server_addr, geons_server_addr, sizeof(CONFIG->geons_server_addr));
+    CONFIG->geons_server_addr = geons_server_addr;
     CONFIG->node_gateway_port = node_server_port;
     CONFIG->data_gateway_port = data_server_port;
 
@@ -53,8 +53,9 @@ uchar is_valid_config(uchar *config_file_path) {
         return 0;
 
     FILE *json_file = fopen(config_file_path, "r");
-    uchar *buffer = (uchar *) memalloc(MAX_CONFIG_FILE_CONTENT);
-    fread(buffer, MAX_CONFIG_FILE_CONTENT - 1, 1, json_file);
+    uchar *buffer = (uchar *) memalloc(MAX_CONFIG_FILE_CONTENT + 1);
+    fread(buffer, MAX_CONFIG_FILE_CONTENT, 1, json_file);
+    buffer[strlen(buffer)] = '\0';
     fclose(json_file);
 
     JSON_Value *template_json_value = get_default_config(1);
