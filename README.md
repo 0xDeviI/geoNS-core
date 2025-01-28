@@ -13,3 +13,6 @@ In order to build the project, you need all the 'development prerequisites' pack
 make
 ```
 within a successful build, you should have a 'bin/' directory that contains geons-core.
+
+## Docs
+If you want to get yourself more familiar with the project, check out [official documentation](/docs/).
