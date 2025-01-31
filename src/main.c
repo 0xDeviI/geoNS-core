@@ -5,6 +5,7 @@
 #include "libs/config/config.h"
 #include "libs/http/http.h"
 
+// TODO: code parser
 
 static const char *const usages[] = {
     "geons-core [options] [[--] args]",
@@ -15,7 +16,10 @@ static const char *const usages[] = {
 int main(int argc, const char *argv[]) {
     init_io_system(argv[0]);
     init_logger();
-    init_config_manager();
+    if (!init_config_manager()) {
+        printf("Config error: Couldn't read config file properly.\n");
+        exit(EXIT_FAILURE);
+    }
 
     char server = 0;
     char client = 0;
@@ -39,7 +43,7 @@ int main(int argc, const char *argv[]) {
 
     if (server) {
         //* Running Server
-        HTTPServer *server = create_http_server("0.0.0.0", 8000, "./");
+        HTTPServer *server = create_http_server(CONFIG->geons_server_addr, 8000, "./");
         if (server != NULL) {
             handle_server_socket(server->socket_server, &http_server_callback);
             sleep(60);

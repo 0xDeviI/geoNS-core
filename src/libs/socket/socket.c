@@ -67,6 +67,7 @@ uchar remove_connection(SocketConnection **head, SocketConnection *connection) {
         else
             previous->next = current->next;
         
+        free(current->buffer);
         free(current);
         current = NULL;
     }
@@ -91,7 +92,13 @@ void *server_socket_thread(void *arg) {
 
     while (server->is_alive) {
         SocketConnection *connection = (SocketConnection *) memalloc(sizeof(SocketConnection));
+        if (connection == NULL) {
+            perror("Memory error");
+            server->is_alive = 0;
+            continue;
+        }
         connection->connection_status = NOT_CONNECTED;
+        connection->buffer_size_limit = server->buffer_size_per_client;
         add_connection(&server->connections, connection);
 
         if ((connection->fd = accept(server->fd, (struct sockaddr *)&server->address, (socklen_t*)&server->addrlen)) < 0) {
@@ -103,6 +110,12 @@ void *server_socket_thread(void *arg) {
         connection->connection_status = CONNECTION_ESTABLISHED;
 
         ClientData *client_data = (ClientData *) memalloc(sizeof(ClientData));
+        if (client_data == NULL) {
+            perror("Memory error");
+            msglog(ERROR, "%s:%d failed to accept client", server->server_addr, server->port);
+            remove_connection(&server->connections, connection);
+            continue;
+        }
         client_data->server_callback = server->callback;
         client_data->head = &server->connections;
         // strncpy(connection->peer_info.server_addr, server->server_addr, MAX_IPV6_LENGTH);
@@ -147,6 +160,10 @@ void handle_server_socket(SocketServer *server, ServerCallback *server_callback)
 
 SocketServer *open_server_socket(uchar *server_addr, ushort port) {
     SocketServer *server = (SocketServer *) memalloc(sizeof(SocketServer));
+    if (server == NULL) {
+        perror("Memory error");
+        return NULL;
+    }
     server->server_addr = server_addr;
     server->addrlen = sizeof(server->address);
     server->port = port;
@@ -233,13 +250,21 @@ void *handle_client(void *arg) {
     free(*client_data);
     *client_data = NULL;
 
-    int client_socket = connection->fd;
-    char *buffer = connection->buffer;
+    // char *buffer = connection->buffer;
+    connection->buffer = (char *) memalloc(connection->buffer_size_limit);
+    if (connection->buffer == NULL) {
+        perror("Memory error");
+        return NULL;
+    }
     int message_length;
+    char callback_result;
 
-    while ((message_length = read(client_socket, buffer, MAX_SOCKET_BUFFER_SIZE)) > 0) {
-        buffer[message_length] = '\0';
-        callback(client_socket, buffer, &peer_info);
+    while ((message_length = read(connection->fd, connection->buffer, connection->buffer_size_limit)) > 0) {
+        connection->buffer[message_length] = '\0';
+        // TEMP: Temporary logging, should be removed
+        msglog(DEBUG, "Transmission [%s:%d] -> [%s:%d]:\n\t%s\n", peer_info.client_addr, peer_info.client_port,
+        peer_info.server_addr, peer_info.server_port, connection->buffer);
+        callback_result = callback(connection);
     }
 
     msglog(DEBUG, "Client %s:%d disconnected from %s:%d", 
@@ -253,6 +278,10 @@ void *handle_client(void *arg) {
 
 SocketServer *connect_to_socket_server(uchar *server_addr, ushort port) {
     SocketServer *server = (SocketServer *) memalloc(sizeof(SocketServer));
+    if (server == NULL) {
+        perror("Memory error");
+        return NULL;
+    }
     server->port = port;
     server->server_addr = server_addr;
     server->fd = 0;
@@ -286,11 +315,11 @@ SocketServer *connect_to_socket_server(uchar *server_addr, ushort port) {
     return server;
 }
 
-ssize_t send_message(int fd, uchar *message, size_t message_length, int flags) {
+size_t send_message(int fd, uchar *message, size_t message_length, int flags) {
     return send(fd, message, message_length, flags);
 }
 
 
-ssize_t recv_message(int fd, void *buffer, size_t buffer_size, int flags) {
+size_t recv_message(int fd, void *buffer, size_t buffer_size, int flags) {
     return recv(fd, buffer, buffer_size, flags);
 }

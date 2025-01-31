@@ -81,23 +81,29 @@ char get_all_active_nodes(Database *db, Node **nodes, uchar size_of_nodes) {
         return -1;
     }
     
-    uchar current_node = 0;
+    uchar nodes_count = 0;
     while ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
+        Node *node = (Node *) memalloc(sizeof(Node));
+        if (node == NULL) {
+            perror("Memory error");
+            sqlite3_finalize(stmt);
+            return -1;
+        }
+
         uchar id = sqlite3_column_int(stmt, 0);
         uchar *server_addr = (uchar *) sqlite3_column_text(stmt, 1);
         ushort node_gateway = sqlite3_column_int(stmt, 2);
         ushort data_gateway = sqlite3_column_int(stmt, 3);
         uchar *status = (uchar *) sqlite3_column_text(stmt, 4);
-        Node *node = (Node *) memalloc(sizeof(Node));
         strncpy(node->server_addr, server_addr, sizeof(node->server_addr));
         strncpy(node->status, status, sizeof(node->status));
         node->id = id;
         node->node_gateway = node_gateway;
         node->data_gateway = data_gateway;
-        nodes[current_node++] = node;
+        nodes[nodes_count++] = node;
     }
     sqlite3_finalize(stmt);
-    return current_node;
+    return nodes_count;
 }
 
 

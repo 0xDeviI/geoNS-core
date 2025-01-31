@@ -24,9 +24,10 @@ void setUp(void) {
 void tearDown(void) {
 }
 
-void test_server_callback(int fd, uchar *request, PeerInfo *peer_info) {
-    TEST_ASSERT_EQUAL_STRING(CLIENT_REQUEST, request);
-    send(fd, SERVER_RESPONSE, strlen(SERVER_RESPONSE), 0);
+char test_server_callback(SocketConnection *connection) {
+    TEST_ASSERT_EQUAL_STRING(CLIENT_REQUEST, connection->buffer);
+    send(connection->fd, SERVER_RESPONSE, strlen(SERVER_RESPONSE), 0);
+    return 1;
 }
 
 void test_communication_with_server(void) {

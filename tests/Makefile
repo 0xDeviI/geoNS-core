@@ -1,7 +1,7 @@
 CC = gcc
 SRC_DIR = ../src
 LIB_DIR = $(SRC_DIR)/libs
-LIBS = $(wildcard ${LIB_DIR}/**/*.c)
+LIBS = $(shell find ${LIB_DIR} -name '*.c')
 CFLAGS = -I $(LIB_DIR)
 LDFLAGS = $(shell pkg-config --libs sqlite3 openssl)
 UNITY_SRC = ${LIB_DIR}/unity/unity.c

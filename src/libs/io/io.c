@@ -5,8 +5,12 @@ uchar is_io_initialized = 0;
 uchar cwd[MAX_SYS_PATH_LENGTH];
 
 
-uchar* exec(uchar* format, ...) {
-    uchar* result = memalloc(MAX_SYS_OUTPUT_LENGTH);
+uchar *exec(uchar *format, ...) {
+    uchar* result = (uchar *) memalloc(MAX_SYS_OUTPUT_LENGTH);
+    if (result == NULL) {
+        perror("Memory error");
+        return NULL;
+    }
 
     va_list args;
     va_start(args, format);

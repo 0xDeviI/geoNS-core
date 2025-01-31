@@ -14,9 +14,9 @@ void init_logger(void) {
 }
 
 
-void msglog(LogType type, uchar *message, ...) {
+char msglog(LogType type, uchar *message, ...) {
     if (!is_io_initialized)
-        return;
+        return 0;
     
     if ((type == DEBUG && is_debugging) || (type != DEBUG)) {
         uchar log_file_path[MAX_SYS_PATH_LENGTH];
@@ -25,8 +25,8 @@ void msglog(LogType type, uchar *message, ...) {
 
         if (!is_directory_exists(log_file_path)) {
             if (mkdir(log_file_path, 0700)) {
-                perror("Failed making logs direcotry.");
-                exit(EXIT_FAILURE);
+                perror("Directory creation error");
+                return 0;
             }
         }
 
@@ -41,19 +41,18 @@ void msglog(LogType type, uchar *message, ...) {
         FILE *log_file = fopen(log_file_path, "a");
         
         if (log_file == NULL) {
-            printf("Failed to open log file.");
-            return;
+            perror("Log file error");
+            return 0;
         }
 
         // Calculate necessary log size
-        ssize_t size_of_message = strlen(buffer);
-        ssize_t log_size = MAX_LOG_PRE_TEXT_LENGTH + size_of_message + 50; // Extra space for timestamp and log level
+        size_t size_of_message = strlen(buffer);
+        size_t log_size = MAX_LOG_PRE_TEXT_LENGTH + size_of_message + 50; // Extra space for timestamp and log level
         uchar *log_data = (uchar *) memalloc(log_size);
-        
         if (log_data == NULL) {
-            perror("Failed to allocate memory for log data.");
             fclose(log_file);
-            return;
+            perror("Memory error");
+            return 0;
         }
 
         uchar log_char = 'U';
@@ -77,9 +76,6 @@ void msglog(LogType type, uchar *message, ...) {
         }
         // Properly format the log message
         snprintf(log_data, log_size, "%c\t[%s]\t%.*s\n", log_char, current_time, (int)size_of_message, buffer);
-
-        // Print to console (for debugging)
-        // printf("%s", log_data);
 
         // Write to file
         fwrite(log_data, strlen(log_data), 1, log_file);

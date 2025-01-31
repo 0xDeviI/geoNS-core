@@ -20,10 +20,6 @@ typedef struct sPeerInfo
     ushort client_port;
 } PeerInfo;
 
-
-typedef void (ServerCallback)(int fd, uchar *request, PeerInfo *peer_info);
-
-
 typedef enum eConnectionStatus 
 {
     NOT_CONNECTED,
@@ -33,12 +29,15 @@ typedef enum eConnectionStatus
 
 typedef struct sSocketConnection
 {
-    uchar buffer[MAX_SOCKET_BUFFER_SIZE];
+    size_t buffer_size_limit;
+    char *buffer;
     int fd;
     struct sSocketConnection *next;
     enum eConnectionStatus connection_status;
     struct sPeerInfo peer_info;
 } SocketConnection;
+
+typedef char (ServerCallback)(SocketConnection *connection);
 
 
 typedef struct sSocketServer
@@ -52,6 +51,7 @@ typedef struct sSocketServer
     uchar is_alive: 1;
     thread thread;
     ServerCallback *callback;
+    size_t buffer_size_per_client;
 } SocketServer;
 
 
@@ -72,8 +72,8 @@ void kill_socket(int fd);
 void kill_socket_server(SocketServer *server);
 void *handle_client(void *arg);
 SocketServer *connect_to_socket_server(uchar *server_addr, ushort port);
-ssize_t send_message(int fd, uchar *message, size_t message_length, int flags);
-ssize_t recv_message(int fd, void *buffer, size_t buffer_size, int flags);
+size_t send_message(int fd, uchar *message, size_t message_length, int flags);
+size_t recv_message(int fd, void *buffer, size_t buffer_size, int flags);
 
 
 

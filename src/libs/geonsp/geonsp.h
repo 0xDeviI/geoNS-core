@@ -19,8 +19,8 @@ JSON_Value *construct_add_node_request(uchar *server_addr,
 JSON_Value *construct_get_nodes_request(void);
 JSON_Value *construct_client_hello_request(void);
 SocketServer *is_geons_host_available(uchar *server_addr, ushort node_gateway);
-void server_proto_data_response(int fd, uchar is_success, uchar *message, JSON_Value *data, PeerInfo *peer_info);
-void server_proto_response(int fd, uchar is_success, uchar *message, PeerInfo *peer_info);
-void node_server_callback(int fd, uchar *request, PeerInfo *peer_info);
+void server_proto_data_response(SocketConnection *connection, uchar is_success, uchar *message, JSON_Value *data);
+void server_proto_response(SocketConnection *connection, uchar is_success, uchar *message);
+char node_server_callback(SocketConnection *connection);
 
 #endif // !GEONS_PROTOCOL_H

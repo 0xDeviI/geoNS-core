@@ -13,12 +13,14 @@
 #define MAX_SYS_COMMAND_LENGTH_PER_EXEC         1024
 
 // Socket constants
+#define MAX_IPV6_LENGTH                         39
+
+// GeoNS-Protocol constants
 #define DEFAULT_GEONS_SERVER_ADDR               "0.0.0.0"
 #define DEFAULT_NODE_GATEWAY_PORT               9060
 #define DEFAULT_DATA_GATEWAY_PORT               6090
-#define MAX_SOCKET_BUFFER_SIZE                  4096
-#define MAX_SOCKET_METHOD_NAME                  64
-#define MAX_IPV6_LENGTH                         39
+#define MAX_GEONSP_BUFFER_SIZE                  4096
+#define MAX_GEONSP_METHOD_NAME                  64
 
 // Decentralization constants
 #define MAX_ACTIVE_NODES                        16
@@ -35,8 +37,11 @@
 
 // HTTP constants
 #define MAX_HTTP_URI_LENGTH                     2048
-#define MAX_HTTP_HEADERS                        1024
 #define MAX_HTTP_METHOD_LENGTH                  16
 #define MAX_HTTP_VERSION_LENGTH                 16
+#define MAX_HTTP_HEADER_NAME_LENGTH             40
+#define MAX_HTTP_HEADER_VALUE_LENGTH            128                   // According to CORS safelisted header specifications
+#define MAX_HTTP_REQUEST_SIZE                   1024*1024*1024*2      // 2GB
+#define BASE_HTTP_REQUEST_SIZE                  1024*16               // 16KB
 
 #endif // !GEONS_CONSTANTS_H

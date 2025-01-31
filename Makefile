@@ -12,7 +12,7 @@ BIN_DIR = bin
 # Target executable
 TARGET = $(BIN_DIR)/geoNS-core
 
-LIBS = $(wildcard ${LIB_DIR}/**/*.c)
+LIBS = $(shell find ${LIB_DIR} -name '*.c')
 EXCLUDED_LIBS = $(wildcard ${LIB_DIR}/unity/*.c)
 
 # Source files

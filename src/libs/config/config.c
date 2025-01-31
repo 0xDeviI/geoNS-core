@@ -13,21 +13,28 @@ void release_config(void) {
 }
 
 
-void load_config(void) {
+uchar load_config(void) {
     CONFIG = (Config *) memalloc(sizeof(Config));
+    if (CONFIG == NULL) {
+        perror("Memory error");
+        return 0;
+    }
 
     JSON_Value *config = get_config("");
+    if (config == NULL)
+        return 0;
     JSON_Object *config_json_object = json_value_get_object(config);
 
     uchar *geons_server_addr = (uchar *) json_object_dotget_string(config_json_object, "server.server_addr");
     ushort node_server_port = json_object_dotget_number(config_json_object, "server.node.server_port");
     ushort data_server_port = json_object_dotget_number(config_json_object, "server.data.server_port");
 
-    CONFIG->geons_server_addr = geons_server_addr;
+    strncpy(CONFIG->geons_server_addr, geons_server_addr, sizeof(CONFIG->geons_server_addr));
     CONFIG->node_gateway_port = node_server_port;
     CONFIG->data_gateway_port = data_server_port;
 
     json_value_free(config);
+    return 1;
 }
 
 
@@ -52,9 +59,14 @@ uchar is_valid_config(uchar *config_file_path) {
     if (!is_file_exist(config_file_path))
         return 0;
 
+    uchar *buffer = (uchar *) memalloc(MAX_CONFIG_FILE_CONTENT);
+    if (buffer == NULL) {
+        perror("Memory error");
+        return 0;
+    }
+
     FILE *json_file = fopen(config_file_path, "r");
-    uchar *buffer = (uchar *) memalloc(MAX_CONFIG_FILE_CONTENT + 1);
-    fread(buffer, MAX_CONFIG_FILE_CONTENT, 1, json_file);
+    fread(buffer, MAX_CONFIG_FILE_CONTENT - 1, 1, json_file);
     buffer[strlen(buffer)] = '\0';
     fclose(json_file);
 
@@ -66,7 +78,7 @@ uchar is_valid_config(uchar *config_file_path) {
     json_value_free(json_value);
     free(buffer);
 
-    return result;
+    return result == JSONSuccess;
 }
 
 
@@ -81,14 +93,14 @@ void create_default_config(uchar *config_file_path) {
 }
 
 
-void init_config_manager(void) {
+uchar init_config_manager(void) {
     get_cwd_path(CONFIG_FILE_PATH, sizeof(CONFIG_FILE_PATH));
     strncat(CONFIG_FILE_PATH, CONFIG_FILE_NAME, sizeof(CONFIG_FILE_PATH) - 1);
 
     if ((!is_file_exist(CONFIG_FILE_PATH)) || (!is_valid_config(CONFIG_FILE_PATH)))
         create_default_config(CONFIG_FILE_PATH);
 
-    load_config();
+    return load_config();
 }
 
 
@@ -96,12 +108,17 @@ JSON_Value *get_config(uchar *key) {
     if (!is_file_exist(CONFIG_FILE_PATH))
         return NULL;
 
-    FILE *json_file = fopen(CONFIG_FILE_PATH, "r");
     uchar *buffer = (uchar *) memalloc(MAX_CONFIG_FILE_CONTENT);
+    if (buffer == NULL) {
+        perror("Memory error");
+        return NULL;
+    }
+
+    FILE *json_file = fopen(CONFIG_FILE_PATH, "r");
     fread(buffer, MAX_CONFIG_FILE_CONTENT - 1, 1, json_file);
     fclose(json_file);
 
-    
+
     JSON_Value *json_value = json_parse_string(buffer);
     if (strlen(key) > 0) {
         uchar is_nested = strchr(key, '.') != NULL;
@@ -132,6 +149,8 @@ uchar set_config(uchar *key, void *value, ValueType type) {
         return 0;
 
     JSON_Value *config = get_config("");
+    if (config == NULL)
+        return 0;
     JSON_Object *config_json_object = json_value_get_object(config);
     
     uchar is_nested = strchr(key, '.') != NULL;

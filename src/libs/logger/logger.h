@@ -19,6 +19,6 @@ typedef enum eLogType {
 extern uchar log_file_name[MAX_LOG_FILE_NAME_LENGTH];
 
 void init_logger(void);
-void msglog(LogType type, uchar *message, ...);
+char msglog(LogType type, uchar *message, ...);
 
 #endif // !GEONS_LOGGER_H
