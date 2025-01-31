@@ -38,7 +38,8 @@ uchar connect_localdb_node_servers() {
         .data_gateway=CONFIG->data_gateway_port,
         .status="active"
     };
-    strncpy(source_node.server_addr, CONFIG->geons_server_addr, sizeof(source_node.server_addr));
+    strncpy(source_node.server_addr, CONFIG->geons_server_addr, sizeof(source_node.server_addr) - 1);
+    source_node.server_addr[strlen(source_node.server_addr)] = '\0';
 
     for (uchar i = 0; i < nodes; i++) {
         Node *destination_node = active_nodes[i];

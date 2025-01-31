@@ -29,7 +29,8 @@ uchar load_config(void) {
     ushort node_server_port = json_object_dotget_number(config_json_object, "server.node.server_port");
     ushort data_server_port = json_object_dotget_number(config_json_object, "server.data.server_port");
 
-    strncpy(CONFIG->geons_server_addr, geons_server_addr, sizeof(CONFIG->geons_server_addr));
+    strncpy(CONFIG->geons_server_addr, geons_server_addr, sizeof(CONFIG->geons_server_addr) - 1);
+    CONFIG->geons_server_addr[strlen(CONFIG->geons_server_addr)] = '\0';
     CONFIG->node_gateway_port = node_server_port;
     CONFIG->data_gateway_port = data_server_port;
 

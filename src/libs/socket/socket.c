@@ -118,10 +118,8 @@ void *server_socket_thread(void *arg) {
         }
         client_data->server_callback = server->callback;
         client_data->head = &server->connections;
-        // strncpy(connection->peer_info.server_addr, server->server_addr, MAX_IPV6_LENGTH);
         connection->peer_info.server_addr = server->server_addr;
         connection->peer_info.server_port = server->port;
-        // strncpy(connection->peer_info.client_addr, inet_ntoa(server->address.sin_addr), MAX_IPV6_LENGTH);
         connection->peer_info.client_addr = inet_ntoa(server->address.sin_addr);
         connection->peer_info.client_port = ntohs(server->address.sin_port);
         client_data->current = connection;
