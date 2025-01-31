@@ -1,0 +1,13 @@
+{
+   glibc_2_34_memory_leak_when_using_pthread_stack
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:calloc
+   fun:UnknownInlinedFun
+   fun:allocate_dtv
+   fun:_dl_allocate_tls
+   fun:allocate_stack
+   fun:pthread_create@@GLIBC_2.34
+   fun:handle_server_socket
+   fun:main
+}

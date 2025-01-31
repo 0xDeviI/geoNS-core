@@ -27,14 +27,11 @@ HTTPServer *create_http_server(uchar *server_addr, ushort port, uchar *public_di
     if (!strlen(public_dir))
         return NULL;
 
-    uchar public_dir_path[MAX_SYS_PATH_LENGTH];
-    if (!is_absolute_path(public_dir)) {
-        get_cwd_path(public_dir_path, sizeof(public_dir_path));
-        strncat(public_dir_path, public_dir, sizeof(public_dir_path) - 1);
-        public_dir = public_dir_path;
-    }
-    else
-        strncpy(public_dir_path, public_dir, sizeof(public_dir_path) - 1);
+    size_t public_dir_path_size = MAX_SYS_PATH_LENGTH;
+    uchar public_dir_path[public_dir_path_size];
+    if (!is_absolute_path(public_dir))
+        get_cwd_path(public_dir_path, public_dir_path_size);
+    strncat(public_dir_path, public_dir, strlen(public_dir));
 
     if (!is_directory_exists(public_dir_path)) {
         msglog(ERROR, "Public directory %s does not exist for HTTP server.", public_dir_path);
@@ -54,7 +51,7 @@ HTTPServer *create_http_server(uchar *server_addr, ushort port, uchar *public_di
         return NULL;
     }
 
-    size_t public_dir_path_size = strlen(public_dir_path);
+    public_dir_path_size = strlen(public_dir_path);
     http_server->public_dir = (uchar *) memalloc(public_dir_path_size + 1);
     if (http_server->public_dir == NULL) {
         perror("Memory error");
@@ -64,7 +61,7 @@ HTTPServer *create_http_server(uchar *server_addr, ushort port, uchar *public_di
 
     http_server->socket_server = socket_server;
     strncpy(http_server->public_dir, public_dir_path, public_dir_path_size);
-    http_server->public_dir[public_dir_path_size + 1] = '\0';
+    http_server->public_dir[public_dir_path_size] = '\0';
 
     HTTP_SERVER = http_server;
     return http_server;

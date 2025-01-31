@@ -88,7 +88,8 @@ ulong get_file_size(uchar *file_path) {
 
 
 void get_cwd_path(uchar *file_path, ushort size_of_file_path) {
-    strncpy(file_path, cwd, size_of_file_path);
+    strncpy(file_path, cwd, size_of_file_path - 1);
+    file_path[strlen(cwd)] = '\0';
 }
 
 
