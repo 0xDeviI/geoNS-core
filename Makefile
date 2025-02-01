@@ -2,6 +2,11 @@
 CC = clang
 CFLAGS = -Wall -Wextra -O2 -I src/libs -I abstraction $(shell pkg-config --cflags sqlite3 openssl)
 LDFLAGS = -Ilibs -Iabstraction $(shell pkg-config --libs sqlite3 openssl)
+# Use on production releases
+COMPRESSION_FLAGS = -Oz -flto -fno-exceptions -fno-rtti \
+-fdata-sections -ffunction-sections \
+-Wl,--gc-sections -Wl,--strip-all \
+-DNDEBUG
 
 # Directories
 SRC_DIR = src
