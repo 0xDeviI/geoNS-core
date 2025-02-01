@@ -4,6 +4,7 @@
 #include "libs/logger/logger.h"
 #include "libs/config/config.h"
 #include "libs/http/http.h"
+#include "libs/core/embed.h"
 
 // TODO: code parser
 
@@ -14,15 +15,10 @@ static const char *const usages[] = {
 };
 
 int main(int argc, const char *argv[]) {
-    init_io_system(argv[0]);
-    init_logger();
-    if (!init_config_manager()) {
-        printf("Config error: Couldn't read config file properly.\n");
-        exit(EXIT_FAILURE);
-    }
-
+    printf(LOGO);
     char server = 0;
     char client = 0;
+    char license = 0;
     struct argparse_option options[] = {
         OPT_HELP(),
         OPT_GROUP("Core options"),
@@ -31,6 +27,8 @@ int main(int argc, const char *argv[]) {
         OPT_BOOLEAN('s', "server", &server, "starts geoNS server", NULL, 0, 0),
         OPT_GROUP("Client options"),
         OPT_BOOLEAN('c', "client", &client, "starts geoNS client", NULL, 0, 0),
+        OPT_GROUP("Other options"),
+        OPT_BOOLEAN('L', "license", &license, "shows program license agreement", NULL, 0, 0),
         OPT_END(),
     };
 
@@ -38,6 +36,18 @@ int main(int argc, const char *argv[]) {
     argparse_init(&argparse, options, usages, 0);
     argparse_describe(&argparse, "\ngeoNS (Geolocational Net Stat) is a decentralized service that monitors internet quality.", "\nThe core service is responsible for handling decentralized operations, log collection and API provision.");
     argc = argparse_parse(&argparse, argc, argv);
+
+    if (license) {
+        printf(LICENSE);
+        exit(EXIT_SUCCESS);
+    }
+
+    init_io_system(argv[0]);
+    init_logger();
+    if (!init_config_manager()) {
+        printf("Config error: Couldn't read config file properly.\n");
+        exit(EXIT_FAILURE);
+    }
 
     msglog(DEBUG, "geoNS-core started.");
 

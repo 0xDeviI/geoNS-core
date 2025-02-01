@@ -1,0 +1,43 @@
+#include "embed.h"
+
+// Required embeddable documents
+const char *LICENSE = 
+"\n        geoNS-core - Decentralized Internet Availability Logger\n"
+"                          Copyright (C) 2025\n"
+"            geoNS-core 0.1.0    Armin Asefi    Feb 1st 2025\n"
+"\n"
+"   This program may be used freely, and you are welcome to redistribute it\n"
+"   under certain conditions.\n"
+"\n"
+"   This program is distributed in the hope that it will be useful,\n"
+"   but WITHOUT ANY WARRANTY; without even the implied warranty of\n"
+"   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n"
+"   geoNS-core License Agreements for more details.\n"
+"\n"
+"   You are free to edit, share, and distribute this software, ONLY FOR\n"
+"   NON-PROFIT PURPOSES. For any profitable use, you must contact the original\n"
+"   author for permission.\n"
+"\n"
+"   The original author's name must remain in all editions and distributions\n"
+"   of this software. The license file (LICENSE) must also be included in all\n"
+"   redistributions with this same text.\n"
+"\n"
+"   The GitHub URL of the original source code must always be referenced in\n"
+"   distributions and the license file:\n"
+"\n"
+"        https://github.com/0xDeviI/geoNS-core\n"
+"\n"
+"   Armin Asefi\n"
+"   <arminloveslinux@gmail.com>\n"
+"\n";
+
+const char *LOGO = 
+"\t⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠤⢄⣀⡀⠀⠀⠀⠀⠀⠀⠀⠀\n"
+"\t⠀⠀⠀⡀⠀⠀⢀⣀⣈⣳⣤⣤⣤⣤⣤⣤⣄⡀⠉⠳⣄⠀⠀⠀⠀⠀⠀\n"
+"\t⠀⠀⢠⣙⣶⡷⠶⠙⠁⣤⣿⡿⣻⣽⡏⠑⠪⣿⣿⠦⣤⠗⢢⡀⠀⠀⠀\t               _  _ ___ \n"
+"\t⢶⣾⣟⢙⠀⠀⠀⠀⣰⡯⣗⢓⢷⣿⣷⣦⣰⣿⣽⣏⠛⢦⠀⠘⡦⡀⠀\t  __ _ ___ ___| \\| / __|\n"
+"\t⠀⠀⠛⢦⣲⡀⠀⠀⡿⠁⠉⠁⢾⣿⣟⣿⣿⣿⣿⡿⡄⠰⣧⡀⠱⠵⡀\t / _` / -_) _ \\ .` \\__ \\\n"
+"\t⠀⠀⠀⠈⠙⠟⣆⠀⢷⠀⠀⠀⠸⣿⣷⡃⠀⠉⢙⣷⠃⠀⠈⠛⣖⠋⠀\t \\__, \\___\\___/_|\\_|___/\n"
+"\t⠀⠀⠀⢢⡘⠛⠛⠻⢎⣷⣄⣀⣀⠀⠀⠀⣀⣔⡯⠃⠀⠀⠀⠀⠹⡆⠀\t |___/                  \n"
+"\t⠀⠀⠀⠀⠈⠑⠒⠤⣄⡀⠈⠋⠫⠍⠯⠟⡍⡁⡀⣤⣤⡦⠶⠒⠀⠁⠀\n"
+"\t⠀⠀⠀⠀⠀⠀⠀⠀⠀⠙⠒⠒⠒⠒⠂⠀⠀⠀⠀⠈⠉⠳⠀⠀⠀⠀⠀\n\n";
