@@ -14,6 +14,7 @@
 
 // Socket constants
 #define MAX_IPV6_LENGTH                         39
+#define BASE_SOCKET_BUFFER_SIZE                 1024
 
 // GeoNS-Protocol constants
 #define DEFAULT_GEONS_SERVER_ADDR               "0.0.0.0"
@@ -38,10 +39,10 @@
 // HTTP constants
 #define MAX_HTTP_URI_LENGTH                     2048
 #define MAX_HTTP_METHOD_LENGTH                  16
-#define MAX_HTTP_VERSION_LENGTH                 16
+#define MAX_HTTP_VERSION_LENGTH                 8
 #define MAX_HTTP_HEADER_NAME_LENGTH             40
-#define MAX_HTTP_HEADER_VALUE_LENGTH            128                   // According to CORS safelisted header specifications
-#define MAX_HTTP_REQUEST_SIZE                   1024*1024*1024*2      // 2GB
-#define BASE_HTTP_REQUEST_SIZE                  1024*16               // 16KB
+#define MAX_HTTP_HEADER_VALUE_LENGTH            1024                    // According to CORS safelisted header specifications
+#define MAX_HTTP_REQUEST_SIZE                   1024*1024*1024*2        // 2GB
+#define BASE_HTTP_REQUEST_SIZE                  1024*8                  // 8KB
 
 #endif // !GEONS_CONSTANTS_H

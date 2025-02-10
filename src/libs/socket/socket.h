@@ -29,15 +29,16 @@ typedef enum eConnectionStatus
 
 typedef struct sSocketConnection
 {
-    size_t buffer_size_limit;
-    char *buffer;
     int fd;
     struct sSocketConnection *next;
-    enum eConnectionStatus connection_status;
     struct sPeerInfo peer_info;
+    enum eConnectionStatus connection_status;
+    size_t buffer_size_limit;
+    char *buffer;
+    ssize_t buffer_size;
 } SocketConnection;
 
-typedef char (ServerCallback)(SocketConnection *connection);
+typedef ssize_t (ServerCallback)(SocketConnection *connection);
 
 
 typedef struct sSocketServer

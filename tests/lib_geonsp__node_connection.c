@@ -3,14 +3,19 @@ Scenario:
     1. Connects from a client to the server, and checks for successfull connection
     2. Sends a message to the server and receives server's reply
     3. Disconnections from the server
+
+NOTE:
+    Because of requirements of GeoNS server mechanism and its need to hanlde database
+    side operations, testing GeoNS-server creation fails here. In order to test, make
+    sure to run a GeoNS-server in geoNS-core and then run the test.
 */
 
 
 #include "../src/libs/unity/unity.h"
 #include "../src/libs/server/server.h"
 
-#define SERVER_ADDR "127.0.0.1"
-#define SERVER_PORT 9060
+#define SERVER_ADDR "127.0.0.1"     // Local IP address. Change if needed
+#define SERVER_PORT 9060            // Default GeoNS node gateway port
 
 #define CLIENT_REQUEST "{\"method\": \"GET_VERSION\"}"
 

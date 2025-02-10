@@ -166,6 +166,7 @@ SocketServer *open_server_socket(uchar *server_addr, ushort port) {
     server->addrlen = sizeof(server->address);
     server->port = port;
     server->is_alive = 0;
+    server->buffer_size_per_client = BASE_SOCKET_BUFFER_SIZE;
     server->connections = NULL;
     
     if ((server->fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
@@ -254,15 +255,20 @@ void *handle_client(void *arg) {
         perror("Memory error");
         return NULL;
     }
-    int message_length;
     char callback_result;
 
-    while ((message_length = read(connection->fd, connection->buffer, connection->buffer_size_limit)) > 0) {
-        connection->buffer[message_length] = '\0';
-        // TEMP: Temporary logging, should be removed
-        msglog(DEBUG, "Transmission [%s:%d] -> [%s:%d]:\n\t%s\n", peer_info.client_addr, peer_info.client_port,
-        peer_info.server_addr, peer_info.server_port, connection->buffer);
+    while ((connection->buffer_size = recv(connection->fd, connection->buffer, connection->buffer_size_limit, MSG_PEEK)) > 0) {
+        // Callback interpretations:
+        // cb=-1  -> There was an error
+        // cb=0   -> Success, recv with 0
         callback_result = callback(connection);
+        if (callback_result == -1) {
+            recv(connection->fd, connection->buffer, connection->buffer_size, 0);
+            break;
+        }
+        else if (!callback_result) {
+            recv(connection->fd, connection->buffer, connection->buffer_size, 0);
+        }
     }
 
     msglog(DEBUG, "Client %s:%d disconnected from %s:%d", 

@@ -21,6 +21,6 @@ JSON_Value *construct_client_hello_request(void);
 SocketServer *is_geons_host_available(uchar *server_addr, ushort node_gateway);
 void server_proto_data_response(SocketConnection *connection, uchar is_success, uchar *message, JSON_Value *data);
 void server_proto_response(SocketConnection *connection, uchar is_success, uchar *message);
-char node_server_callback(SocketConnection *connection);
+ssize_t node_server_callback(SocketConnection *connection);
 
 #endif // !GEONS_PROTOCOL_H

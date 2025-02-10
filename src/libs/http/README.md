@@ -4,7 +4,7 @@ This is a simple implementation of HTTP/1.1 in C
 ## Feature Implementation
 I asked an LLM "what a basic HTTP/1.1 server needs?" and this is the answer. I'm going to implement these for now. Everything that gets 'DONE✅' alongside the title, is implemented.
 1. Basic HTTP/1.1 Request Handling
-    Request Parsing: Ability to parse HTTP/1.1 requests, including method, URI, headers, and body.
+    Request Parsing: Ability to parse HTTP/1.1 requests, including method, URI, [headers](./HeaderParsingGuide.md), and body.
     Method Support: Handle common HTTP methods like GET, POST, PUT, DELETE, and HEAD.
 2. Response Generation
     Status Codes: Support for generating responses with common HTTP status codes (e.g., 200 OK, 404 Not Found, 500 Internal Server Error).

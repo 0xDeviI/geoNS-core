@@ -3,6 +3,6 @@
 
 #include "../http.h"
 
-HTTPRequest *parse_http_request(int fd, uchar *request);
+HTTPRequest *parse_http_request(SocketConnection *connection);
 
 #endif // !GEONS_HTTP_PARSER_H

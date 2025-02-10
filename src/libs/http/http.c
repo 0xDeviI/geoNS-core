@@ -7,7 +7,6 @@ HTTPServer *HTTP_SERVER = NULL;
 
 void send_http_response(HTTPRequest *request, uchar *response, size_t size_of_response) {
     send_message(request->fd, response, size_of_response, 0);
-    kill_http_connection(request);
 }
 
 
@@ -78,7 +77,7 @@ void kill_http_server(HTTPServer *server) {
 }
 
 
-char http_server_callback(SocketConnection *connection) {
+ssize_t http_server_callback(SocketConnection *connection) {
     // Parsing request:
         // 1. storing headers
         // 2. storing method
@@ -87,13 +86,19 @@ char http_server_callback(SocketConnection *connection) {
         // 5. looking for URI within public folder
         // 6. if this is not URI, search for routes
 
-    HTTPRequest *http_request = parse_http_request(connection->fd, connection->buffer);
+    HTTPRequest *http_request = parse_http_request(connection);
     if (http_request == NULL) {
-        return 0;
+        return -1;
     }
+    printf("=== Printing headers ===\n");
+    for (int i = 0; i < http_request->headers_count - 1; i++) {
+        HTTPHeader *header = &(http_request->headers[i]);
+        printf("\t%s:%s\n", header->name, header->value);
+    }
+    printf("=== Printing headers DONE ===\n");
 
-    http_request->fd = connection->fd;
     char *response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nHello world from C web server!\n";
     send_http_response(http_request, response, strlen(response));
+    kill_http_connection(http_request);
     return 1;
 }

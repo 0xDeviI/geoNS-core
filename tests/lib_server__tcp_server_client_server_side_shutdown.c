@@ -24,10 +24,10 @@ void setUp(void) {
 void tearDown(void) {
 }
 
-char test_server_callback(SocketConnection *connection) {
+ssize_t test_server_callback(SocketConnection *connection) {
     TEST_ASSERT_EQUAL_STRING(CLIENT_REQUEST, connection->buffer);
     send(connection->fd, SERVER_RESPONSE, strlen(SERVER_RESPONSE), 0);
-    return 1;
+    return 0;
 }
 
 void test_communication_with_server(void) {

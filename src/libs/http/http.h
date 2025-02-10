@@ -11,6 +11,6 @@ void kill_http_connection(HTTPRequest *request);
 HTTPServer *create_http_server(uchar *server_addr, ushort port, uchar *public_dir);
 // void route(HTTPServer *server, uchar *route, HTTPCallback *callback);
 void kill_http_server(HTTPServer *server);
-char http_server_callback(SocketConnection *connection);
+ssize_t http_server_callback(SocketConnection *connection);
 
 #endif // !GEONS_HTTP_H

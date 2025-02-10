@@ -201,7 +201,7 @@ void server_proto_response(SocketConnection *connection, uchar is_success, uchar
 }
 
 
-char node_server_callback(SocketConnection *connection) {
+ssize_t node_server_callback(SocketConnection *connection) {
     if (strlen(connection->buffer) != 0) {
         msglog(DEBUG, 
             "Request[%s:%d -> %s:%d]:\n- %32s%s", 
@@ -280,17 +280,17 @@ char node_server_callback(SocketConnection *connection) {
             else {
                 json_value_free(request_value);
                 server_proto_response(connection, 0, "GEONSP: Invalid protocol method.");
-                return 0;
+                return -1;
             }
             
             json_value_free(request_value);
-            return 1;
+            return -1;
         }
         json_value_free(request_value);
         server_proto_response(connection, 0, "GEONSP: Invalid protocol message.");
-        return 0;
+        return -1;
     }
     
     server_proto_response(connection, 0, "GEONSP: Empty protocol message.");
-    return 0;
+    return -1;
 }

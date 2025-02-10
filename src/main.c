@@ -6,8 +6,6 @@
 #include "libs/http/http.h"
 #include "libs/core/embed.h"
 
-// TODO: code parser
-
 static const char *const usages[] = {
     "geons-core [options] [[--] args]",
     "geons-core [options]",
