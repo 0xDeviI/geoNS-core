@@ -1,6 +1,6 @@
 # Compiler and flags
 CC = clang
-CFLAGS = -Wall -Wextra -O2 -I src/libs -I abstraction $(shell pkg-config --cflags sqlite3 openssl)
+CFLAGS = -ggdb -Wall -Wextra -O2 -I src/libs -I abstraction $(shell pkg-config --cflags sqlite3 openssl)
 LDFLAGS = -Ilibs -Iabstraction $(shell pkg-config --libs sqlite3 openssl)
 # Use on production releases
 COMPRESSION_FLAGS = -Oz -flto -fno-exceptions -fno-rtti \

@@ -4,6 +4,19 @@
 
 HTTPServer *HTTP_SERVER = NULL;
 
+void clear_http_headers(HTTPRequest *request) {
+    if (request->headers_count == 1) {
+        free(request->headers);
+        return;
+    }
+
+    for (int i = request->headers_count - 1; i > 0; i--) {
+        free(request->headers[i - 1].value);
+    }
+
+    free(request->headers);
+}
+
 
 void send_http_response(HTTPRequest *request, uchar *response, size_t size_of_response) {
     send_message(request->fd, response, size_of_response, 0);
@@ -14,6 +27,7 @@ void kill_http_connection(HTTPRequest *request) {
     kill_socket(request->fd);
     if (request->body != NULL)
         free(request->body);
+    clear_http_headers(request);
     free(request);
     request = NULL;
 }
@@ -90,12 +104,12 @@ ssize_t http_server_callback(SocketConnection *connection) {
     if (http_request == NULL) {
         return -1;
     }
-    printf("=== Printing headers ===\n");
-    for (int i = 0; i < http_request->headers_count - 1; i++) {
-        HTTPHeader *header = &(http_request->headers[i]);
-        printf("\t%s:%s\n", header->name, header->value);
-    }
-    printf("=== Printing headers DONE ===\n");
+    // printf("=== Printing headers ===\n");
+    // for (int i = 0; i < http_request->headers_count - 1; i++) {
+    //     HTTPHeader *header = &(http_request->headers[i]);
+    //     printf("\t%s:%s\n", header->name, header->value);
+    // }
+    // printf("=== Printing headers DONE ===\n");
 
     char *response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nHello world from C web server!\n";
     send_http_response(http_request, response, strlen(response));

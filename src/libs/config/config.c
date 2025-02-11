@@ -26,13 +26,11 @@ uchar load_config(void) {
     JSON_Object *config_json_object = json_value_get_object(config);
 
     uchar *geons_server_addr = (uchar *) json_object_dotget_string(config_json_object, "server.server_addr");
-    ushort node_server_port = json_object_dotget_number(config_json_object, "server.node.server_port");
-    ushort data_server_port = json_object_dotget_number(config_json_object, "server.data.server_port");
-
-    strncpy(CONFIG->geons_server_addr, geons_server_addr, sizeof(CONFIG->geons_server_addr) - 1);
-    CONFIG->geons_server_addr[strlen(CONFIG->geons_server_addr)] = '\0';
-    CONFIG->node_gateway_port = node_server_port;
-    CONFIG->data_gateway_port = data_server_port;
+    strncpy(CONFIG->geons_config.geons_server_addr, geons_server_addr, sizeof(CONFIG->geons_config.geons_server_addr) - 1);
+    CONFIG->geons_config.geons_server_addr[strlen(CONFIG->geons_config.geons_server_addr)] = '\0';
+    CONFIG->geons_config.node_gateway_port = json_object_dotget_number(config_json_object, "server.node.server_port");
+    CONFIG->geons_config.data_gateway_port = json_object_dotget_number(config_json_object, "server.data.server_port");
+    CONFIG->http_config.accept_any_method = json_object_dotget_boolean(config_json_object, "server.http.accept_any_method");
 
     json_value_free(config);
     return 1;
@@ -52,6 +50,7 @@ JSON_Value *get_default_config(uchar is_template) {
     json_object_dotset_string(json_object, "server.server_addr", !is_template ? DEFAULT_GEONS_SERVER_ADDR : "");
     json_object_dotset_number(json_object, "server.node.server_port", !is_template ? DEFAULT_NODE_GATEWAY_PORT : 0);
     json_object_dotset_number(json_object, "server.data.server_port", !is_template ? DEFAULT_DATA_GATEWAY_PORT : 0);
+    json_object_dotset_boolean(json_object, "server.http.accept_any_method", 0);
 
     return json_value;
 }

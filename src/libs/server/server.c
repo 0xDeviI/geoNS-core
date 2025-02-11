@@ -34,11 +34,11 @@ uchar connect_localdb_node_servers() {
     Node source_node = {
         .id=0,
         .server_addr="",
-        .node_gateway=CONFIG->node_gateway_port,
-        .data_gateway=CONFIG->data_gateway_port,
+        .node_gateway=CONFIG->geons_config.node_gateway_port,
+        .data_gateway=CONFIG->geons_config.data_gateway_port,
         .status="active"
     };
-    strncpy(source_node.server_addr, CONFIG->geons_server_addr, sizeof(source_node.server_addr) - 1);
+    strncpy(source_node.server_addr, CONFIG->geons_config.geons_server_addr, sizeof(source_node.server_addr) - 1);
     source_node.server_addr[strlen(source_node.server_addr)] = '\0';
 
     for (uchar i = 0; i < nodes; i++) {
@@ -65,11 +65,11 @@ uchar connect_init_node_servers() {
         Node source_node = {
             .id=0,
             .server_addr="",
-            .node_gateway=CONFIG->node_gateway_port,
-            .data_gateway=CONFIG->data_gateway_port,
+            .node_gateway=CONFIG->geons_config.node_gateway_port,
+            .data_gateway=CONFIG->geons_config.data_gateway_port,
             .status="active"
         };
-        strncpy(source_node.server_addr, CONFIG->geons_server_addr, sizeof(source_node.server_addr) - 1);
+        strncpy(source_node.server_addr, CONFIG->geons_config.geons_server_addr, sizeof(source_node.server_addr) - 1);
         source_node.server_addr[sizeof(source_node.server_addr)] = '\0';
 
         for (uchar i = 0; i < size_of_init_nodes; i++) {
@@ -116,9 +116,9 @@ GeoNSServer *create_geons_server() {
     }
 
     // creating node socket server
-    server->node_gateway_server = open_server_socket(CONFIG->geons_server_addr, CONFIG->node_gateway_port);
+    server->node_gateway_server = open_server_socket(CONFIG->geons_config.geons_server_addr, CONFIG->geons_config.node_gateway_port);
     if (server->node_gateway_server == NULL) {
-        msglog(ERROR, "Creating node server failed on %s:%d", CONFIG->geons_server_addr, CONFIG->node_gateway_port);
+        msglog(ERROR, "Creating node server failed on %s:%d", CONFIG->geons_config.geons_server_addr, CONFIG->geons_config.node_gateway_port);
         kill_geons_server(server);
         return NULL;
     }
@@ -127,7 +127,7 @@ GeoNSServer *create_geons_server() {
     handle_server_socket(server->node_gateway_server, &node_server_callback);
 
     // creating data socket server (SHOULD CHECK FOR NULL SERVER SOCKET!)
-    // server->data_gateway_server = open_server_socket(CONFIG->geons_server_addr, CONFIG->data_gateway_port);
+    // server->data_gateway_server = open_server_socket(CONFIG->geons_config.geons_server_addr, CONFIG->geons_config.data_gateway_port);
     // handle_server_socket(server->data_gateway_server);
 
     // TODO: setting up client API

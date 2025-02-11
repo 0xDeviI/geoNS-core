@@ -15,11 +15,24 @@ typedef enum eValueType {
 } ValueType;
 
 
-typedef struct sConfig
+typedef struct sGeoNSConfig
 {
     uchar geons_server_addr[MAX_IPV6_LENGTH + 1];
     ushort node_gateway_port;
     ushort data_gateway_port;
+} GeoNSConfig;
+
+
+typedef struct sHTTPConfig
+{
+    uchar accept_any_method: 1;
+} HTTPConfig;
+
+
+typedef struct sConfig
+{
+    GeoNSConfig geons_config;
+    HTTPConfig http_config;
 } Config;
 
 
