@@ -4,17 +4,86 @@
 
 HTTPServer *HTTP_SERVER = NULL;
 
+char *get_http_header_value(HTTPRequest *request, uchar *header_name) {
+    // TODO: should be implemented
+    const char *pattern = "^([^:]+):[[:space:]]*(.*)$";
+    regex_t regex;
+    regmatch_t matches[MAX_HTTP_HEADER_REGEX_MATCH];
+
+    // Compile the regex
+    if (regcomp(&regex, pattern, REG_EXTENDED)) {
+        perror("Regex error");
+        return NULL;
+    }
+
+    char *header_copy = (char *) memalloc(request->headers_size);
+    if (header_copy == NULL) {
+        perror("Memory error");
+        regfree(&regex);
+        return NULL;
+    }
+    strncpy(header_copy, request->headers, request->headers_size);
+
+    char *header_token_ptr;
+    char *header_field_name = NULL;
+    char *header_field_value = NULL;
+    char *header_token = strtok_r(header_copy, "\n", &header_token_ptr);
+    while (header_token != NULL) {
+        if (!regexec(&regex, header_token, MAX_HTTP_HEADER_REGEX_MATCH, matches, 0)) {
+            int name_start = matches[1].rm_so;
+            int name_end = matches[1].rm_eo;
+            size_t size_of_header_name = name_end - name_start;
+            if (header_field_name == NULL)
+                header_field_name = (char *) memalloc(size_of_header_name);
+            else
+                header_field_name = (char *) realloc(header_field_name, size_of_header_name);
+
+            if (header_field_name == NULL) {
+                regfree(&regex);
+                free(header_copy);
+                return NULL;
+            }
+
+            memset(header_field_name, '\0', size_of_header_name);
+            strncpy(header_field_name, header_token + name_start, name_end - name_start);
+            header_field_name[name_end - name_start] = '\0';
+
+            if (!strncmp(header_name, header_field_name, sizeof(header_field_name))) {
+                // Extract header value
+                int value_start = matches[2].rm_so;
+                int value_end = matches[2].rm_eo;
+                size_t size_of_header_value = value_end - value_start;
+                header_field_value = (char *) memalloc(size_of_header_value);
+                if (header_field_value == NULL) {
+                    free(header_field_name);
+                    regfree(&regex);
+                    free(header_copy);
+                    return NULL;
+                }
+                
+                strncpy(header_field_value, header_token + value_start, value_end - value_start);
+                header_field_value[value_end - value_start] = '\0';
+                free(header_field_name);
+                regfree(&regex);
+                free(header_copy);
+                return header_field_value;
+            }
+            else
+                header_token = strtok_r(NULL, "\n", &header_token_ptr);
+        }
+        else
+            break;
+    }
+
+    regfree(&regex);
+    free(header_copy);
+    return NULL;
+}
+
+
 void clear_http_headers(HTTPRequest *request) {
-    if (request->headers_count == 1) {
+    if (request->headers != NULL)
         free(request->headers);
-        return;
-    }
-
-    for (int i = request->headers_count - 1; i > 0; i--) {
-        free(request->headers[i - 1].value);
-    }
-
-    free(request->headers);
 }
 
 
@@ -104,12 +173,6 @@ ssize_t http_server_callback(SocketConnection *connection) {
     if (http_request == NULL) {
         return -1;
     }
-    // printf("=== Printing headers ===\n");
-    // for (int i = 0; i < http_request->headers_count - 1; i++) {
-    //     HTTPHeader *header = &(http_request->headers[i]);
-    //     printf("\t%s:%s\n", header->name, header->value);
-    // }
-    // printf("=== Printing headers DONE ===\n");
 
     char *response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nHello world from C web server!\n";
     send_http_response(http_request, response, strlen(response));

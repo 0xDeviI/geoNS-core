@@ -6,6 +6,7 @@
 #include "parser/parser.h"
 
 
+char *get_http_header_value(HTTPRequest *request, uchar *header_name);
 void clear_http_headers(HTTPRequest *request);
 void send_http_response(HTTPRequest *request, uchar *response, size_t size_of_response);
 void kill_http_connection(HTTPRequest *request);

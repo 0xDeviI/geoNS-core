@@ -23,7 +23,6 @@ typedef struct sHTTPHeader
 
 typedef struct sHTTPRequestParseStatus {
     uchar is_request_line_parsed: 1;
-    uchar is_header_parsed: 1;
     uchar is_method_parsed: 1;
     uchar is_uri_parsed: 1;
     uchar is_version_parsed: 1;
@@ -40,9 +39,12 @@ typedef struct sHTTPRequest
     HTTPMethod method;
     uchar uri[MAX_HTTP_URI_LENGTH];
     HTTPVersion version;
-    size_t headers_count;
-    HTTPHeader *headers;
+    ushort request_line_offset;
+    ushort headers_size;
+    char *headers;
+    ushort headers_offset;
     char *body;
+    size_t body_size;
     int fd;
 } HTTPRequest;
 

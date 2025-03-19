@@ -32,38 +32,35 @@ uchar to_lower_string(char *string) {
 }
 
 HTTPRequest *parse_http_request(SocketConnection *connection) {
-    // TEMP
-    recv_message(connection->fd, connection->buffer, connection->buffer_size, 0);
-
     HTTPRequest *http_request = (HTTPRequest *) memalloc(sizeof(HTTPRequest));
     if (http_request == NULL) {
         perror("Memory error");
         return NULL;
     }
     http_request->fd = connection->fd;
-    http_request->headers_count = 1;
-    http_request->headers = (HTTPHeader *) memalloc(sizeof(HTTPHeader) * http_request->headers_count);
+
+    // Accessing body
+    char *request_save_ptr, *request_line_save_ptr, *header_save_ptr;
+    char *body_start = strstr(connection->buffer, "\r\n\r\n");
+
+    // Accessing headers
+    char *end_of_request_line = strstr(connection->buffer, "\n");
+    http_request->request_line_offset = end_of_request_line - connection->buffer;
+    http_request->headers_offset = (body_start - connection->buffer) + 4;
+    http_request->headers_size = http_request->headers_offset - http_request->request_line_offset;
+    http_request->headers_size = http_request->headers_size > BASE_HTTP_REQUEST_HEADER_SIZE
+    ? BASE_HTTP_REQUEST_HEADER_SIZE
+    : http_request->headers_size;
+    // TODO: consider closing the connection if the security configuration allows
+    // TODO: check the config from the config manager.
+
+    http_request->headers = (char *) memalloc(http_request->headers_size);
     if (http_request->headers == NULL) {
         perror("Memory error");
         free(http_request);
         return NULL;
     }
-    
-    const char *pattern = "^([^:]+):[[:space:]]*(.*)$";
-    regex_t regex;
-    regmatch_t matches[MAX_HTTP_HEADER_REGEX_MATCH];
-
-    // Compile the regex
-    if (regcomp(&regex, pattern, REG_EXTENDED)) {
-        perror("Regex error");
-        free(http_request->headers);
-        free(http_request);
-        return NULL;
-    }
-    
-    char *request_save_ptr, *request_line_save_ptr, *header_save_ptr;
-    char *body_start = strstr(connection->buffer, "\r\n\r\n");
-    size_t header_size = 0;
+    strncpy(http_request->headers, connection->buffer + http_request->request_line_offset + 1, http_request->headers_size);
 
     char *token = strtok_r(connection->buffer, "\n", &request_save_ptr);
     while (token != NULL) {
@@ -101,65 +98,44 @@ HTTPRequest *parse_http_request(SocketConnection *connection) {
             }
             http_request->parse_status.is_request_line_parsed = 1;
         }
-        else if (!http_request->parse_status.is_header_parsed) {
-            http_request->parse_status.is_header_parsed = !strncmp(token, "\r", 2);
-            if (http_request->parse_status.is_header_parsed) {
-                token = strtok_r(NULL, "\n", &request_save_ptr);
-                continue;
-            }
-            else {
-                if (!regexec(&regex, token, MAX_HTTP_HEADER_REGEX_MATCH, matches, 0)) {
-                    HTTPHeader *header = &(http_request->headers[http_request->headers_count - 1]);
-                    // Extract header name
-                    int name_start = matches[1].rm_so;
-                    int name_end = matches[1].rm_eo;
-                    size_t size_of_header_name = name_end - name_start;
-                    if (size_of_header_name > sizeof(header->name) - 1) {
-                        token = strtok_r(NULL, "\n", &request_save_ptr);
-                        continue;
-                    }
-                    strncpy(header->name, token + name_start, name_end - name_start);
-                    header->name[name_end - name_start] = '\0';
-
-                    // Extract header value
-                    int value_start = matches[2].rm_so;
-                    int value_end = matches[2].rm_eo;
-                    size_t size_of_header_value = value_end - value_start;
-                    size_t current_header_size = size_of_header_name + size_of_header_value;
-                    
-                    if (!http_request->method.is_body_required) {
-                        if (header_size + current_header_size > BASE_HTTP_REQUEST_SIZE) {
-                            token = strtok_r(NULL, "\n", &request_save_ptr);
-                            continue;
-                        }
-                    }
-                    else {
-                        if (http_request->headers_count - 1 > 256) {
-                            token = strtok_r(NULL, "\n", &request_save_ptr);
-                            continue;
-                        }
-                    }
-
-                    header->value = (char *) memalloc(
-                        (size_of_header_value > BASE_HTTP_HEADER_VALUE_LENGTH
-                        ? BASE_HTTP_HEADER_VALUE_LENGTH
-                        : size_of_header_value) + 1
-                    );
-                    strncpy(header->value, token + value_start, value_end - value_start);
-                    header->value[value_end - value_start] = '\0';
-
-                    header_size += current_header_size;
-                    http_request->headers_count++;
-                    http_request->headers = (HTTPHeader *) realloc(http_request->headers, sizeof(HTTPHeader) * http_request->headers_count);
-                }
-            }
-        }
         else
             break;
 
         token = strtok_r(NULL, "\n", &request_save_ptr);
     }
-    regfree(&regex);
+
+    if (!http_request->method.is_body_required)
+        recv_message(connection->fd, connection->buffer, connection->buffer_size, 0);
+    else {
+        char *content_length_header = get_http_header_value(http_request, "Content-Length");
+        if (content_length_header == NULL)
+            http_request->body_size = 0;
+        else {
+            char *endptr;
+            http_request->body_size = strtol(content_length_header, &endptr, 10);
+            if (endptr == content_length_header)
+                http_request->body_size = 0;
+        }
+        free(content_length_header);
+
+        if (http_request->body_size != 0) {
+            connection->buffer_size = http_request->headers_offset + http_request->body_size;
+            if (connection->buffer_size > MAX_HTTP_REQUEST_SIZE) {
+                // TODO: consider sending proper HTTP response error
+                kill_http_connection(http_request);
+                return NULL;
+            }
+            else {
+                connection->buffer = (char *) realloc(connection->buffer, connection->buffer_size);
+                if (connection->buffer == NULL) {
+                    // TODO: consider sending proper HTTP response error
+                    kill_http_connection(http_request);
+                    return NULL;
+                }
+                recv_message(connection->fd, connection->buffer, connection->buffer_size, 0);
+            }
+        }
+    }
 
     return http_request;
 }
