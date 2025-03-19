@@ -160,6 +160,35 @@ void kill_http_server(HTTPServer *server) {
 }
 
 
+char *get_mime_type(const char *file_path) {
+    const char *mime_type;
+    magic_t magic_cookie;
+
+    magic_cookie = magic_open(MAGIC_MIME_TYPE);
+    if (magic_cookie == NULL) {
+        perror("Unable to initialize magic library");
+        return NULL;
+    }
+
+    if (magic_load(magic_cookie, NULL) != 0) {
+        perror("Cannot load magic database");
+        magic_close(magic_cookie);
+        return NULL;
+    }
+
+    mime_type = magic_file(magic_cookie, file_path);
+    if (mime_type == NULL) {
+        perror("Cannot determine mime type");
+        magic_close(magic_cookie);
+        return NULL;
+    }
+
+    char *mime_type_copy = strdup(mime_type);
+    magic_close(magic_cookie);
+    return mime_type_copy;
+}
+
+
 ssize_t http_server_callback(SocketConnection *connection) {
     // Parsing request:
         // 1. storing headers
@@ -174,8 +203,50 @@ ssize_t http_server_callback(SocketConnection *connection) {
         return -1;
     }
 
-    char *response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nHello world from C web server!\n";
-    send_http_response(http_request, response, strlen(response));
+    // Step 5: Looking for URI within public folder
+    char file_path[MAX_SYS_PATH_LENGTH];
+    snprintf(file_path, sizeof(file_path), "%s/%s", HTTP_SERVER->public_dir, http_request->uri);
+
+    if (is_file_exist(file_path)) {
+        FILE *file = fopen(file_path, "rb");
+        if (file == NULL) {
+            perror("File error");
+            kill_http_connection(http_request);
+            return -1;
+        }
+
+        size_t file_size = get_file_size(file_path);
+
+        char *file_content = (char *) memalloc(file_size + 1);
+        if (file_content == NULL) {
+            perror("Memory error");
+            fclose(file);
+            kill_http_connection(http_request);
+            return -1;
+        }
+
+        fread(file_content, 1, file_size, file);
+        fclose(file);
+
+        char *mime_type = get_mime_type(file_path);
+        if (mime_type == NULL) {
+            mime_type = "application/octet-stream";
+        }
+
+        char response_header[256];
+        snprintf(response_header, sizeof(response_header), "HTTP/1.1 200 OK\r\nContent-Type: %s\r\nContent-Length: %zu\r\n\r\n", mime_type, file_size);
+
+        send_http_response(http_request, response_header, strlen(response_header));
+        send_http_response(http_request, file_content, file_size);
+
+        free(file_content);
+        free(mime_type);
+    } else {
+        // Step 6: If this is not URI, search for routes
+        char *response = "HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\n\r\nFile not found\n";
+        send_http_response(http_request, response, strlen(response));
+    }
+
     kill_http_connection(http_request);
     return 1;
 }

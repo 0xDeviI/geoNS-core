@@ -1,6 +1,9 @@
 /* TODO/TEMP:
-    1. Accessing config to check for any method allow check
-    2. Handling socket buffer based on method
+    1. Send proper HTTP response error on failures
+    2. Accessing config to check for any method allow check
+    3. Add piped HTTP response formats (for exmaple, all responses should contain header, showing web server)
+    4. Accessing config to check for connection-close when header length exceeds the limits
+    5. Accessing config to check for connection-close when body length exceeds the limits
 */
 
 #include "parser.h"

@@ -6,6 +6,7 @@ In order to build the project you need the following packages to be installed on
 1. make
 2. sqlite-devel (RHEL based systems) | libsqlite3-dev (Debian based systems)
 3. openssl-devel (RHEL based systems) | libssl-dev (Debian based systems)
+4. file-devel (RHEL based systems) | libmagic-dev (Debian based systems)
 
 ## Build
 In order to build the project, you need all the 'development prerequisites' packages to be installed on your system. Then you can build the core using following command:
