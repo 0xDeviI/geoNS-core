@@ -3,6 +3,7 @@
 
 #define STRINGIFY(x) #x
 #define TOSTRING(x) STRINGIFY(x)
+#define GEONS_EXEC_NAME "geoNS-core"
 #define GEONS_MAJOR_VERSION 0
 #define GEONS_MINOR_VERSION 1
 #define GEONS_PATCH_VERSION 0

@@ -13,10 +13,10 @@ static const char *const usages[] = {
 };
 
 int main(int argc, const char *argv[]) {
-    printf(LOGO);
     char server = 0;
     char client = 0;
     char license = 0;
+    char version = 0;
     struct argparse_option options[] = {
         OPT_HELP(),
         OPT_GROUP("Core options"),
@@ -27,6 +27,7 @@ int main(int argc, const char *argv[]) {
         OPT_BOOLEAN('c', "client", &client, "starts geoNS client", NULL, 0, 0),
         OPT_GROUP("Other options"),
         OPT_BOOLEAN('L', "license", &license, "shows program license agreement", NULL, 0, 0),
+        OPT_BOOLEAN('v', "version", &version, "shows information on program version", NULL, 0, 0),
         OPT_END(),
     };
 
@@ -34,6 +35,13 @@ int main(int argc, const char *argv[]) {
     argparse_init(&argparse, options, usages, 0);
     argparse_describe(&argparse, "\ngeoNS (Geolocational Net Stat) is a decentralized service that monitors internet quality.", "\nThe core service is responsible for handling decentralized operations, log collection and API provision.");
     argc = argparse_parse(&argparse, argc, argv);
+
+    if (version) {
+        printf("%s %s (%s)\n", GEONS_EXEC_NAME, GEONS_VERSION, OS_NAME);
+        exit(EXIT_SUCCESS);
+    }
+
+    printf(LOGO);
 
     if (license) {
         printf(LICENSE);
@@ -54,7 +62,7 @@ int main(int argc, const char *argv[]) {
         HTTPServer *server = create_http_server(CONFIG->geons_config.geons_server_addr, 8000, "../");
         if (server != NULL) {
             handle_server_socket(server->socket_server, &http_server_callback);
-            sleep(10);
+            sleep(120);
             kill_http_server(server);
         }
 

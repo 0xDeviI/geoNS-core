@@ -125,14 +125,14 @@ HTTPRequest *parse_http_request(SocketConnection *connection) {
             connection->buffer_size = http_request->headers_offset + http_request->body_size;
             if (connection->buffer_size > MAX_HTTP_REQUEST_SIZE) {
                 // TODO: consider sending proper HTTP response error
-                kill_http_connection(http_request);
+                send_http_error_413(http_request);
                 return NULL;
             }
             else {
                 connection->buffer = (char *) realloc(connection->buffer, connection->buffer_size);
                 if (connection->buffer == NULL) {
                     // TODO: consider sending proper HTTP response error
-                    kill_http_connection(http_request);
+                    send_http_error_413(http_request);
                     return NULL;
                 }
                 recv_message(connection->fd, connection->buffer, connection->buffer_size, 0);

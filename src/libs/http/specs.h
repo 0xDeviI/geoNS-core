@@ -50,7 +50,11 @@ typedef struct sHTTPRequest
 
 typedef struct sHTTPResponse
 {
-    HTTPHeader *headers;
+    ushort status_code;
+    uchar *reason_phrase;
+    char *headers;
+    char *body;
+    size_t body_size;
 } HTTPResponse;
 
 typedef struct sHTTPServer

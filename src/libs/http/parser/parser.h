@@ -4,6 +4,7 @@
 #include <regex.h>
 #include <ctype.h>
 #include "../http.h"
+#include "../response/response.h"
 
 uchar is_body_required(char *method);
 uchar to_lower_string(char *string);
