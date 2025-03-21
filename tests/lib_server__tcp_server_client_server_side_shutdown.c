@@ -44,11 +44,13 @@ void test_communication_with_server(void) {
 
     
     // Sending 3 messages for each of clients, each in 1 second
+    size_t message_size;
     char response[strlen(SERVER_RESPONSE) + 1];
     for (int i = 0; i < clients_size; i++)
         for (int j = 0; j < 3; j++) {
             send_message(clients[i]->fd, CLIENT_REQUEST, strlen(CLIENT_REQUEST), 0);
-            recv_message(clients[i]->fd, response, sizeof(response), 0);
+            message_size = recv_message(clients[i]->fd, response, sizeof(response), 0);
+            response[message_size] = '\0';
             TEST_ASSERT_EQUAL_STRING(SERVER_RESPONSE, response);
             sleep(1);
         }

@@ -37,10 +37,12 @@ void test_communication_with_server(void) {
     TEST_ASSERT_NOT_NULL(socket_to_server);
     
     // Sending 5 messages, each in 1 second
+    size_t message_size;
     char response[strlen(SERVER_RESPONSE) + 1];
     for (int i = 0; i < 5; i++) {
         send_message(socket_to_server->fd, CLIENT_REQUEST, strlen(CLIENT_REQUEST), 0);
-        recv_message(socket_to_server->fd, response, sizeof(response), 0);
+        message_size = recv_message(socket_to_server->fd, response, sizeof(response), 0);
+        response[message_size] = '\0';
         TEST_ASSERT_EQUAL_STRING(SERVER_RESPONSE, response);
         sleep(1);
     }

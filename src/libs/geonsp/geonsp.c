@@ -284,7 +284,7 @@ ssize_t node_server_callback(SocketConnection *connection) {
             }
             
             json_value_free(request_value);
-            return -1;
+            return 0;
         }
         json_value_free(request_value);
         server_proto_response(connection, 0, "GEONSP: Invalid protocol message.");
