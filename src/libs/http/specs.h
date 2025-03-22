@@ -15,6 +15,11 @@ typedef enum eHTTPVersion {
     UNKNOWN=-1
 } HTTPVersion;
 
+typedef struct sHTTPStatusCode {
+    ushort code;
+    uchar *reason_phrase;
+} HTTPStatusCode;
+
 typedef struct sHTTPHeader
 {
     uchar name[MAX_HTTP_HEADER_NAME_LENGTH + 1];
@@ -53,6 +58,7 @@ typedef struct sHTTPResponse
     ushort status_code;
     uchar *reason_phrase;
     char *headers;
+    size_t headers_size;
     char *body;
     size_t body_size;
 } HTTPResponse;

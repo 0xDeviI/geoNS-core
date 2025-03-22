@@ -9,9 +9,12 @@
 #define GEONS_WEBSERVER_NAME "GeoNSWS"
 #define GEONS_WEBSERVER_INFO (GEONS_WEBSERVER_NAME "/" GEONS_VERSION " (" OS_NAME ")")
 
+extern const HTTPStatusCode HTTP_STATUSES[];
+
+char *get_reason_phrase(ushort status_code);
 char *get_http_header_value(HTTPRequest *request, uchar *header_name);
 void free_http_headers(HTTPRequest *request);
-uchar set_http_response_header(HTTPResponse *response, uchar *header_name, uchar *header_value, ushort is_final_header);
+uchar set_http_response_header(HTTPResponse *response, uchar *header_name, uchar *header_value);
 void free_http_response(HTTPResponse *response);
 HTTPResponse *create_http_response(ushort status, uchar *reason_phrase, char *body, size_t body_size);
 uchar send_http_response(HTTPRequest *request, HTTPResponse *response);

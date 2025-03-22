@@ -41,9 +41,9 @@
 #define MAX_HTTP_METHOD_LENGTH                  16
 #define MAX_HTTP_VERSION_LENGTH                 8
 #define MAX_HTTP_HEADER_NAME_LENGTH             40
-#define MAX_HTTP_REQUEST_SIZE                   1024*1024*1024*2 - 1        // 2GB
-#define BASE_HTTP_REQUEST_SIZE                  1024*4 - 1                  // 4KB
-#define BASE_HTTP_REQUEST_HEADER_SIZE           1024 - 1                    // 1KB
+#define MAX_HTTP_REQUEST_SIZE                   1024L*1024L*1024L*2L-1L        // 2GB
+#define BASE_HTTP_REQUEST_SIZE                  1024*4 - 1                     // 4KB
+#define BASE_HTTP_REQUEST_HEADER_SIZE           1024 - 1                       // 1KB
 #define MAX_HTTP_HEADER_REGEX_MATCH             10
 
 #endif // !GEONS_CONSTANTS_H

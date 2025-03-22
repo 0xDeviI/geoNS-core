@@ -213,25 +213,25 @@ SocketServer *open_server_socket(uchar *server_addr, ushort port) {
 
 
 void kill_socket_server(SocketServer *server) {
-    if (server != NULL) {
-        msglog(DEBUG, "Killing socket server %s:%d", server->server_addr, server->port);
-        SocketConnection *current = server->connections;
-        while (current != NULL) {
-            SocketConnection *previous = current;
-            ConnectionStatus connection_status = previous->connection_status;
-            PeerInfo peer_info = previous->peer_info;
-            current = current->next;
-            if (remove_connection(&server->connections, previous) && connection_status == CONNECTION_ESTABLISHED)
-                msglog(DEBUG, 
-                    "[%s:%d x-x %s:%d] connection removed.", 
-                    server->server_addr, server->port,
-                    peer_info.client_addr, peer_info.client_port
-                );
-        }
-        kill_socket(server->fd);
-        free(server);
-        server = NULL;
+    if (server == NULL) return;
+
+    msglog(DEBUG, "Killing socket server %s:%d", server->server_addr, server->port);
+    SocketConnection *current = server->connections;
+    while (current != NULL) {
+        SocketConnection *previous = current;
+        ConnectionStatus connection_status = previous->connection_status;
+        PeerInfo peer_info = previous->peer_info;
+        current = current->next;
+        if (remove_connection(&server->connections, previous) && connection_status == CONNECTION_ESTABLISHED)
+            msglog(DEBUG, 
+                "[%s:%d x-x %s:%d] connection removed.", 
+                server->server_addr, server->port,
+                peer_info.client_addr, peer_info.client_port
+            );
     }
+    kill_socket(server->fd);
+    free(server);
+    server = NULL;
 }
 
 

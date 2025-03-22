@@ -35,7 +35,7 @@ typedef struct sSocketConnection
     enum eConnectionStatus connection_status;
     size_t buffer_size_limit;
     char *buffer;
-    ssize_t buffer_size;
+    llint buffer_size;
 } SocketConnection;
 
 typedef ssize_t (ServerCallback)(SocketConnection *connection);

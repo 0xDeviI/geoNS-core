@@ -62,7 +62,7 @@ int main(int argc, const char *argv[]) {
         HTTPServer *server = create_http_server(CONFIG->geons_config.geons_server_addr, 8000, "../");
         if (server != NULL) {
             handle_server_socket(server->socket_server, &http_server_callback);
-            sleep(120);
+            sleep(10);
             kill_http_server(server);
         }
 
