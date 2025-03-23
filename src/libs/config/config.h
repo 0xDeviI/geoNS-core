@@ -26,6 +26,8 @@ typedef struct sGeoNSConfig
 typedef struct sHTTPConfig
 {
     uchar accept_any_method: 1;
+    uchar directory_indexing: 1;
+    uchar trim_large_headers : 1;
 } HTTPConfig;
 
 

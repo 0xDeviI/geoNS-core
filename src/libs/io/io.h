@@ -8,6 +8,7 @@
 #ifdef OS_LINUX
     #include <unistd.h>
     #include <fcntl.h>
+    #include <dirent.h>
 #elif defined(OS_WINDOWS)
     #include <windows.h>
     #include <io.h>
@@ -31,5 +32,6 @@ void get_cwd_path(uchar *file_path, ushort size_of_file_path);
 uchar is_directory_exists(uchar *directory);
 uchar is_sproc_exists(void);
 void init_io_system(const char *exec_path);
+uchar get_directory_entries(char *file_path, char *uri, char **body, size_t *body_size);
 
 #endif // !GEONS_IO_H

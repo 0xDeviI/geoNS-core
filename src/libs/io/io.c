@@ -136,3 +136,43 @@ void init_io_system(const char *exec_path) {
             cwd[i] = '\0';
     is_io_initialized = 1;
 }
+
+
+uchar get_directory_entries(char *file_path, char *uri, char **body, size_t *body_size) {
+    DIR *dir;
+    struct dirent *entry;
+
+    dir = opendir(file_path);
+    if (dir == NULL) {
+        perror("Directory error");
+        return 0;
+    }
+
+    while ((entry = readdir(dir)) != NULL) {
+        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
+            continue;
+
+        size_t entry_length = strlen(entry->d_name) + strlen(uri) + 64;
+        char *new_body = realloc(*body, *body_size + entry_length + 1);
+        if (new_body == NULL) {
+            perror("Memory error");
+            free(*body);
+            *body = NULL;
+            *body_size = 0;
+            closedir(dir);
+            return 0;
+        }
+        *body = new_body;
+
+        snprintf(*body + *body_size, entry_length + 1,
+                 "<a href=\"%s%s%s\">%s</a><br>\n",
+                 uri,
+                 (uri[strlen(uri) - 1] == '/') ? "" : "/",
+                 entry->d_name,
+                 entry->d_name);
+
+        *body_size += strlen(*body + *body_size);
+    }
+    closedir(dir);
+    return 1;
+}

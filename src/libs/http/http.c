@@ -88,7 +88,6 @@ char *get_reason_phrase(ushort status_code) {
 }
 
 char *get_http_header_value(HTTPRequest *request, uchar *header_name) {
-    // TODO: should be implemented
     const char *pattern = "^([^:]+):[[:space:]]*(.*)$";
     regex_t regex;
     regmatch_t matches[MAX_HTTP_HEADER_REGEX_MATCH];
@@ -169,26 +168,24 @@ void free_http_headers(HTTPRequest *request) {
         free(request->headers);
 }
 
-uchar set_http_response_header(HTTPResponse *response, uchar *header_name, uchar *header_value) {
-    if (response == NULL) return 0;
-
+uchar set_http_response_header(char *headers, uchar *header_name, uchar *header_value) {
     size_t required_size = snprintf(NULL, 0, "%s: %s\r\n", header_name, header_value);
 
-    if (response->headers == NULL) {
-        response->headers = (char *) memalloc(required_size + 1);
-        if (response->headers == NULL)
+    if (headers == NULL) {
+        headers = (char *) memalloc(required_size + 1);
+        if (headers == NULL)
             return 0;
-        snprintf(response->headers, required_size + 1, "%s: %s\r\n", header_name, header_value);
+        snprintf(headers, required_size + 1, "%s: %s\r\n", header_name, header_value);
     }
     else {
-        size_t previous_header_size = strlen(response->headers);
-        char *new_headers = (char *) realloc(response->headers, previous_header_size + required_size + 1);
+        size_t previous_header_size = strlen(headers);
+        char *new_headers = (char *) realloc(headers, previous_header_size + required_size + 1);
         if (new_headers == NULL) {
-            free(response->headers);
+            free(headers);
             return 0;
         }
-        response->headers = new_headers;
-        snprintf(response->headers + previous_header_size, required_size + 1, "%s: %s\r\n", header_name, header_value);
+        headers = new_headers;
+        snprintf(headers + previous_header_size, required_size + 1, "%s: %s\r\n", header_name, header_value);
     }
     
     return 1;
@@ -204,7 +201,7 @@ void free_http_response(HTTPResponse *response) {
 }
 
 
-HTTPResponse *create_http_response(ushort status, uchar *reason_phrase, char *body, size_t body_size) {
+HTTPResponse *create_http_response(ushort status, uchar *reason_phrase, char *body, size_t body_size, char *headers) {
     HTTPResponse *response = (HTTPResponse *) memalloc(sizeof(HTTPResponse));
     if (response == NULL)
         return NULL;
@@ -213,6 +210,7 @@ HTTPResponse *create_http_response(ushort status, uchar *reason_phrase, char *bo
     response->reason_phrase = reason_phrase;
     response->body = body;
     response->body_size = body_size;
+    if (headers != NULL) response->headers = headers;
     return response;
 }
 
@@ -226,7 +224,7 @@ uchar send_http_response(HTTPRequest *request, HTTPResponse *response) {
     
     size_t response_size = headers_size + response->body_size;
 
-    char *response_buffer = (char *)memalloc(response_size);
+    char *response_buffer = (char *)memalloc(response_size + 1);
     if (response_buffer == NULL)
         return 0;
 
@@ -360,12 +358,12 @@ ssize_t http_server_callback(SocketConnection *connection) {
     HTTPRequest *http_request = parse_http_request(connection);
     if (http_request == NULL) return -1;
     if (http_request->version == UNKNOWN) {
-        send_http_status_bodyless(http_request, 400);
+        send_http_status_bodyless(http_request, 400, NULL);
         kill_http_connection(http_request);
         return -1;
     }
     if (http_request->version > HTTP_1_1) {
-        send_http_status_bodyless(http_request, 505);
+        send_http_status_bodyless(http_request, 505, NULL);
         kill_http_connection(http_request);
         return -1;
     }
@@ -375,19 +373,34 @@ ssize_t http_server_callback(SocketConnection *connection) {
     snprintf(file_path, sizeof(file_path), "%s/%s", HTTP_SERVER->public_dir, http_request->uri);
 
     if (is_directory_exists(file_path)) {
-        // TODO: consider checking config manager in order to allow directory indexing or not
-        // If the URI is a directory, return a 403 Forbidden response
-        char *body = "Forbidden\n";
-        HTTPResponse *response = create_http_response(
-            403,
-            "Forbidden",
-            body,
-            strlen(body)
-        );
-        send_http_response(http_request, response);
-        free_http_response(response);
-        kill_http_connection(http_request);
-        return -1;
+        if (CONFIG->http_config.directory_indexing) {
+            char *body = NULL;
+            size_t body_size = 0;
+            if (!get_directory_entries(file_path, http_request->uri, &body, &body_size)) {
+                char *body = "Internal Server Error\n";
+                send_http_status(http_request, 500, body, strlen(body), NULL);
+                return -1;
+            }
+
+            if (body == NULL)
+            {
+                body = strdup("No files or directories found.\n");
+                body_size = strlen(body);
+            }
+
+            char *headers = NULL;
+            set_http_response_header(headers, "Content-Type", "text/html");
+            set_http_response_header(headers, "Content-Length", (uchar *)&body_size);
+            set_http_response_header(headers, "Connection", "Close");
+            send_http_status(http_request, 200, body, body_size, headers);
+            free(body);
+            return 0;
+        }
+        else {
+            char *body = "Forbidden\n";
+            send_http_status(http_request, 403, body, strlen(body), NULL);
+            return -1;
+        }
     }
     else {
         if (is_file_exist(file_path)) {
@@ -416,36 +429,22 @@ ssize_t http_server_callback(SocketConnection *connection) {
                 mime_type = "application/octet-stream";
             }
 
-            // TODO: consider creating response functions, and methods to add headers to them
-    
-            HTTPResponse *response = create_http_response(
-                200,
-                "OK",
-                file_content,
-                file_size
-            );
-    
+            char *headers = NULL;
             uchar size_str[32];
             snprintf(size_str, sizeof(size_str), "%zu", file_size);
-            set_http_response_header(response, "Content-Type", mime_type);
-            set_http_response_header(response, "Content-Length", size_str);
-            set_http_response_header(response, "Connection", "Close");
-            send_http_response(http_request, response);
+            set_http_response_header(headers, "Content-Type", mime_type);
+            set_http_response_header(headers, "Content-Length", size_str);
+            set_http_response_header(headers, "Connection", "Close");
+            send_http_status(http_request, 200, file_content, file_size, headers);
             free(file_content);
             free(mime_type);
-            free_http_response(response);
+            return 0;
         } else {
             // TODO: check for routes first, if nothing found, then follow this approach.
             // Step 6: If this is not URI, search for routes
             char *body = "File not found\n";
-            HTTPResponse *response = create_http_response(
-                404,
-                "Not Found",
-                body,
-                strlen(body)
-            );
-            send_http_response(http_request, response);
-            free_http_response(response);
+            send_http_status(http_request, 404, body, strlen(body), NULL);
+            return -1;
         }
     
         kill_http_connection(http_request);

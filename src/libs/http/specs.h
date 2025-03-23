@@ -20,12 +20,6 @@ typedef struct sHTTPStatusCode {
     uchar *reason_phrase;
 } HTTPStatusCode;
 
-typedef struct sHTTPHeader
-{
-    uchar name[MAX_HTTP_HEADER_NAME_LENGTH + 1];
-    uchar *value;
-} HTTPHeader;
-
 typedef struct sHTTPRequestParseStatus {
     uchar is_request_line_parsed: 1;
     uchar is_method_parsed: 1;
@@ -58,7 +52,6 @@ typedef struct sHTTPResponse
     ushort status_code;
     uchar *reason_phrase;
     char *headers;
-    size_t headers_size;
     char *body;
     size_t body_size;
 } HTTPResponse;

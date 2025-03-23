@@ -31,6 +31,8 @@ uchar load_config(void) {
     CONFIG->geons_config.node_gateway_port = json_object_dotget_number(config_json_object, "server.node.server_port");
     CONFIG->geons_config.data_gateway_port = json_object_dotget_number(config_json_object, "server.data.server_port");
     CONFIG->http_config.accept_any_method = json_object_dotget_boolean(config_json_object, "server.http.accept_any_method");
+    CONFIG->http_config.directory_indexing = json_object_dotget_boolean(config_json_object, "server.http.directory_indexing");
+    CONFIG->http_config.trim_large_headers = json_object_dotget_boolean(config_json_object, "server.http.trim_large_headers");
 
     json_value_free(config);
     return 1;
@@ -51,6 +53,9 @@ JSON_Value *get_default_config(uchar is_template) {
     json_object_dotset_number(json_object, "server.node.server_port", !is_template ? DEFAULT_NODE_GATEWAY_PORT : 0);
     json_object_dotset_number(json_object, "server.data.server_port", !is_template ? DEFAULT_DATA_GATEWAY_PORT : 0);
     json_object_dotset_boolean(json_object, "server.http.accept_any_method", 0);
+    json_object_dotset_boolean(json_object, "server.http.directory_indexing", 0);
+    json_object_dotset_boolean(json_object, "server.http.trim_large_headers", 0);
+    
 
     return json_value;
 }
@@ -73,7 +78,7 @@ uchar is_valid_config(uchar *config_file_path) {
     JSON_Value *template_json_value = get_default_config(1);
     JSON_Value *json_value = json_parse_string(buffer);
 
-    uchar result = json_validate(template_json_value, json_value) == JSONSuccess;
+    uchar result = json_validate(template_json_value, json_value);
     json_value_free(template_json_value);
     json_value_free(json_value);
     free(buffer);

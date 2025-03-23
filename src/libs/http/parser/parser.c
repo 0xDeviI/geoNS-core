@@ -51,11 +51,17 @@ HTTPRequest *parse_http_request(SocketConnection *connection) {
     http_request->request_line_offset = end_of_request_line - connection->buffer;
     http_request->headers_offset = (body_start - connection->buffer) + 4;
     http_request->headers_size = http_request->headers_offset - http_request->request_line_offset;
-    http_request->headers_size = http_request->headers_size > BASE_HTTP_REQUEST_HEADER_SIZE
-    ? BASE_HTTP_REQUEST_HEADER_SIZE
-    : http_request->headers_size;
-    // TODO: consider closing the connection if the security configuration allows
-    // TODO: check the config from the config manager.
+    if (http_request->headers_size > BASE_HTTP_REQUEST_HEADER_SIZE) {
+        if (CONFIG->http_config.trim_large_headers) {
+            http_request->headers_size = http_request->headers_size > BASE_HTTP_REQUEST_HEADER_SIZE
+            ? BASE_HTTP_REQUEST_HEADER_SIZE
+            : http_request->headers_size;
+        }
+        else {
+            send_http_status_bodyless(http_request, 431, NULL);
+            return NULL;
+        }
+    }
 
     http_request->headers = (char *) memalloc(http_request->headers_size);
     if (http_request->headers == NULL) {
@@ -124,13 +130,13 @@ HTTPRequest *parse_http_request(SocketConnection *connection) {
         if (http_request->body_size != 0) {
             connection->buffer_size = http_request->headers_offset + http_request->body_size;
             if (connection->buffer_size > MAX_HTTP_REQUEST_SIZE) {
-                send_http_status_bodyless(http_request, 413);
+                send_http_status_bodyless(http_request, 413, NULL);
                 return NULL;
             }
             else {
                 connection->buffer = (char *) realloc(connection->buffer, connection->buffer_size);
                 if (connection->buffer == NULL) {
-                    send_http_status_bodyless(http_request, 413);
+                    send_http_status_bodyless(http_request, 413, NULL);
                     return NULL;
                 }
                 recv_message(connection->fd, connection->buffer, connection->buffer_size, 0);
