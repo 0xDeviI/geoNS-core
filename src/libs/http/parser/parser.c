@@ -1,9 +1,6 @@
 /* TODO/TEMP:
-    1. Send proper HTTP response error on failures
-    2. Accessing config to check for any method allow check
-    3. Add piped HTTP response formats (for exmaple, all responses should contain header, showing web server)
-    4. Accessing config to check for connection-close when header length exceeds the limits
-    5. Accessing config to check for connection-close when body length exceeds the limits
+    1. Implement chunked encoding support
+    3. Accessing config to check for connection-close when body length exceeds the limits
 */
 
 #include "parser.h"
@@ -16,9 +13,45 @@ uchar is_body_required(char *method) {
         "OPTIONS"
     };
     uchar size_of_body_less_methods = sizeof(body_less_methods) / sizeof(body_less_methods[0]);
-    for (int i = 0; i < size_of_body_less_methods; i++)
+    for (int i = 0; i < size_of_body_less_methods; i++) {
+        to_upper_string(method);
         if (!strncmp(method, body_less_methods[i], strlen(body_less_methods[i])))
             return 0;
+    }
+    return 1;
+}
+
+
+uchar is_standard_http_method(char *method) {
+    uchar *standard_methods[] = {
+        "GET",
+        "HEAD",
+        "POST",
+        "PATCH"
+        "PUT",
+        "DELETE",
+        "CONNECT",
+        "OPTIONS",
+        "TRACE"
+    };
+    uchar size_of_standard_methods = sizeof(standard_methods) / sizeof(standard_methods[0]);
+    for (int i = 0; i < size_of_standard_methods; i++) {
+        to_upper_string(method);
+        if (!strncmp(method, standard_methods[i], strlen(standard_methods[i])))
+            return 1;
+    }
+    return 0;
+}
+
+
+uchar to_upper_string(char *string) {
+    if (string == NULL)
+        return 0;
+
+    size_t size_of_string = strlen(string);
+    for (int i = 0; i < size_of_string; i++)
+        string[i] = toupper(string[i]);
+    
     return 1;
 }
 
@@ -59,6 +92,7 @@ HTTPRequest *parse_http_request(SocketConnection *connection) {
         }
         else {
             send_http_status_bodyless(http_request, 431, NULL);
+            kill_http_connection(http_request);
             return NULL;
         }
     }
@@ -130,17 +164,21 @@ HTTPRequest *parse_http_request(SocketConnection *connection) {
         if (http_request->body_size != 0) {
             connection->buffer_size = http_request->headers_offset + http_request->body_size;
             if (connection->buffer_size > MAX_HTTP_REQUEST_SIZE) {
+                if (!CONFIG->http_config.trim_large_body) {
                 send_http_status_bodyless(http_request, 413, NULL);
-                return NULL;
-            }
-            else {
-                connection->buffer = (char *) realloc(connection->buffer, connection->buffer_size);
-                if (connection->buffer == NULL) {
-                    send_http_status_bodyless(http_request, 413, NULL);
+                    kill_http_connection(http_request);
                     return NULL;
                 }
-                recv_message(connection->fd, connection->buffer, connection->buffer_size, 0);
+                else
+                    connection->buffer_size = MAX_HTTP_REQUEST_SIZE;
             }
+            connection->buffer = (char *) realloc(connection->buffer, connection->buffer_size);
+            if (connection->buffer == NULL) {
+                send_http_status_bodyless(http_request, 500, NULL);
+                kill_http_connection(http_request);
+                return NULL;
+            }
+            recv_message(connection->fd, connection->buffer, connection->buffer_size, 0);
         }
     }
 

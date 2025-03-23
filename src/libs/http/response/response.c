@@ -9,7 +9,6 @@ void send_http_status_bodyless(HTTPRequest *request, ushort status_code, char *h
         headers
     );
     send_http_response(request, response);
-    kill_http_connection(request);
     free_http_response(response);
 }
 
@@ -22,6 +21,5 @@ void send_http_status(HTTPRequest *request, ushort status_code, char *body, size
         headers
     );
     send_http_response(request, response);
-    kill_http_connection(request);
     free_http_response(response);
 }

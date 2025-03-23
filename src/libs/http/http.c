@@ -367,6 +367,11 @@ ssize_t http_server_callback(SocketConnection *connection) {
         kill_http_connection(http_request);
         return -1;
     }
+    if (!is_standard_http_method(http_request->method.name) && !CONFIG->http_config.accept_any_method) {
+        send_http_status_bodyless(http_request, 501, NULL);
+        kill_http_connection(http_request);
+        return -1;
+    }
 
     // Step 5: Looking for URI within public folder
     char file_path[MAX_SYS_PATH_LENGTH];
@@ -379,6 +384,7 @@ ssize_t http_server_callback(SocketConnection *connection) {
             if (!get_directory_entries(file_path, http_request->uri, &body, &body_size)) {
                 char *body = "Internal Server Error\n";
                 send_http_status(http_request, 500, body, strlen(body), NULL);
+                kill_http_connection(http_request);
                 return -1;
             }
 
@@ -394,11 +400,13 @@ ssize_t http_server_callback(SocketConnection *connection) {
             set_http_response_header(headers, "Connection", "Close");
             send_http_status(http_request, 200, body, body_size, headers);
             free(body);
+            kill_http_connection(http_request);
             return 0;
         }
         else {
             char *body = "Forbidden\n";
             send_http_status(http_request, 403, body, strlen(body), NULL);
+            kill_http_connection(http_request);
             return -1;
         }
     }
@@ -436,6 +444,7 @@ ssize_t http_server_callback(SocketConnection *connection) {
             set_http_response_header(headers, "Content-Length", size_str);
             set_http_response_header(headers, "Connection", "Close");
             send_http_status(http_request, 200, file_content, file_size, headers);
+            kill_http_connection(http_request);
             free(file_content);
             free(mime_type);
             return 0;
@@ -444,6 +453,7 @@ ssize_t http_server_callback(SocketConnection *connection) {
             // Step 6: If this is not URI, search for routes
             char *body = "File not found\n";
             send_http_status(http_request, 404, body, strlen(body), NULL);
+            kill_http_connection(http_request);
             return -1;
         }
     

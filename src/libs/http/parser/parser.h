@@ -7,6 +7,8 @@
 #include "../response/response.h"
 
 uchar is_body_required(char *method);
+uchar is_standard_http_method(char *method);
+uchar to_upper_string(char *string);
 uchar to_lower_string(char *string);
 HTTPRequest *parse_http_request(SocketConnection *connection);
 
