@@ -45,5 +45,6 @@
 #define BASE_HTTP_REQUEST_SIZE                  1024*4 - 1                     // 4KB
 #define BASE_HTTP_REQUEST_HEADER_SIZE           1024 - 1                       // 1KB
 #define MAX_HTTP_HEADER_REGEX_MATCH             10
+#define MAX_HTTP_ROUTES                         128
 
 #endif // !GEONS_CONSTANTS_H

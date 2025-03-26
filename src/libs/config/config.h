@@ -29,6 +29,7 @@ typedef struct sHTTPConfig
     uchar directory_indexing: 1;
     uchar trim_large_headers : 1;
     uchar trim_large_body : 1;
+    ushort server_port;
 } HTTPConfig;
 
 

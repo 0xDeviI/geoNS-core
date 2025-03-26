@@ -34,6 +34,7 @@ uchar load_config(void) {
     CONFIG->http_config.directory_indexing = json_object_dotget_boolean(config_json_object, "server.http.directory_indexing");
     CONFIG->http_config.trim_large_headers = json_object_dotget_boolean(config_json_object, "server.http.trim_large_headers");
     CONFIG->http_config.trim_large_body = json_object_dotget_boolean(config_json_object, "server.http.trim_large_body");
+    CONFIG->http_config.server_port = json_object_dotget_number(config_json_object, "server.http.server_port");
 
     json_value_free(config);
     return 1;
@@ -50,9 +51,13 @@ void write_config_data(uchar *config_file_path, uchar *config_data) {
 JSON_Value *get_default_config(uchar is_template) {
     JSON_Value *json_value = json_value_init_object();
     JSON_Object *json_object = json_value_get_object(json_value);
+    // GeoNS Server configs
     json_object_dotset_string(json_object, "server.server_addr", !is_template ? DEFAULT_GEONS_SERVER_ADDR : "");
     json_object_dotset_number(json_object, "server.node.server_port", !is_template ? DEFAULT_NODE_GATEWAY_PORT : 0);
     json_object_dotset_number(json_object, "server.data.server_port", !is_template ? DEFAULT_DATA_GATEWAY_PORT : 0);
+
+    // HTTP configs
+    json_object_dotset_number(json_object, "server.http.server_port", 8000);
     json_object_dotset_boolean(json_object, "server.http.accept_any_method", 0);
     json_object_dotset_boolean(json_object, "server.http.directory_indexing", 0);
     json_object_dotset_boolean(json_object, "server.http.trim_large_headers", 0);

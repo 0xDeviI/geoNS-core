@@ -1,7 +1,5 @@
-/* TODO/TEMP:
-    1. Implement chunked encoding support
-    3. Accessing config to check for connection-close when body length exceeds the limits
-*/
+// TODO: 1. Implement chunked encoding support 
+// ! (shall be implemented after implementing routes with custom responses)
 
 #include "parser.h"
 
@@ -165,7 +163,7 @@ HTTPRequest *parse_http_request(SocketConnection *connection) {
             connection->buffer_size = http_request->headers_offset + http_request->body_size;
             if (connection->buffer_size > MAX_HTTP_REQUEST_SIZE) {
                 if (!CONFIG->http_config.trim_large_body) {
-                send_http_status_bodyless(http_request, 413, NULL);
+                    send_http_status_bodyless(http_request, 413, NULL);
                     kill_http_connection(http_request);
                     return NULL;
                 }

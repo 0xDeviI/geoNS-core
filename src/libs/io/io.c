@@ -66,7 +66,9 @@ char is_directory_path(uchar *path) {
 
 
 uchar is_file_exist(uchar *file_path) {
-    return !access(file_path, F_OK);
+    // Should only check for files, not directories
+    struct stat path_stat;
+    return stat(file_path, &path_stat) == 0 && S_ISREG(path_stat.st_mode);
 }
 
 

@@ -32,8 +32,7 @@ typedef struct sHTTPMethod {
     uchar is_body_required : 1;
 } HTTPMethod;
 
-typedef struct sHTTPRequest
-{
+typedef struct sHTTPRequest {
     HTTPRequestParseStatus parse_status;
     HTTPMethod method;
     uchar uri[MAX_HTTP_URI_LENGTH];
@@ -47,8 +46,7 @@ typedef struct sHTTPRequest
     int fd;
 } HTTPRequest;
 
-typedef struct sHTTPResponse
-{
+typedef struct sHTTPResponse {
     ushort status_code;
     uchar *reason_phrase;
     char *headers;
@@ -56,14 +54,17 @@ typedef struct sHTTPResponse
     size_t body_size;
 } HTTPResponse;
 
-typedef struct sHTTPServer
-{
+typedef struct sHTTPServer {
     uchar *public_dir;
     SocketServer *socket_server;
 } HTTPServer;
 
-
 typedef void (HTTPCallback)(void *args, ...);
+
+typedef struct sHTTPRoute {
+    uchar *route;
+    HTTPCallback *callback;
+} HTTPRoute;
 
 extern HTTPServer *HTTP_SERVER;
 

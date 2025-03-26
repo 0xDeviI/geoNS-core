@@ -75,6 +75,7 @@ const HTTPStatusCode HTTP_STATUSES[] = {
     {511, "Network Authentication Required"}
 };
 
+HTTPRoute HTTP_ROUTES[MAX_HTTP_ROUTES];
 HTTPServer *HTTP_SERVER = NULL;
 
 
@@ -86,6 +87,7 @@ char *get_reason_phrase(ushort status_code) {
     }
     return "Unknown Status Code";
 }
+
 
 char *get_http_header_value(HTTPRequest *request, uchar *header_name) {
     const char *pattern = "^([^:]+):[[:space:]]*(.*)$";
@@ -163,29 +165,32 @@ char *get_http_header_value(HTTPRequest *request, uchar *header_name) {
 }
 
 
-void free_http_headers(HTTPRequest *request) {
+void free_http_request_headers(HTTPRequest *request) {
     if (request->headers != NULL)
         free(request->headers);
 }
 
-uchar set_http_response_header(char *headers, uchar *header_name, uchar *header_value) {
+
+uchar set_http_response_header(char **headers, uchar *header_name, uchar *header_value) {
+    if (headers == NULL || header_name == NULL || header_value == NULL)
+        return 0;
+    
     size_t required_size = snprintf(NULL, 0, "%s: %s\r\n", header_name, header_value);
 
-    if (headers == NULL) {
-        headers = (char *) memalloc(required_size + 1);
-        if (headers == NULL)
+    if (*headers == NULL) {
+        *headers = (char *) malloc(required_size + 1);
+        if (*headers == NULL)
             return 0;
-        snprintf(headers, required_size + 1, "%s: %s\r\n", header_name, header_value);
+        snprintf(*headers, required_size + 1, "%s: %s\r\n", header_name, header_value);
     }
     else {
-        size_t previous_header_size = strlen(headers);
-        char *new_headers = (char *) realloc(headers, previous_header_size + required_size + 1);
+        size_t previous_header_size = strlen(*headers);
+        char *new_headers = (char *) realloc(*headers, previous_header_size + required_size + 1);
         if (new_headers == NULL) {
-            free(headers);
-            return 0;
+            return 0; // Don't free *headers here; keep the original buffer.
         }
-        headers = new_headers;
-        snprintf(headers + previous_header_size, required_size + 1, "%s: %s\r\n", header_name, header_value);
+        *headers = new_headers;
+        snprintf(*headers + previous_header_size, required_size + 1, "%s: %s\r\n", header_name, header_value);
     }
     
     return 1;
@@ -214,6 +219,7 @@ HTTPResponse *create_http_response(ushort status, uchar *reason_phrase, char *bo
     return response;
 }
 
+
 uchar send_http_response(HTTPRequest *request, HTTPResponse *response) {
     char server_header[64];
     snprintf(server_header, sizeof(server_header), "Server: %s", GEONS_WEBSERVER_INFO);
@@ -224,7 +230,7 @@ uchar send_http_response(HTTPRequest *request, HTTPResponse *response) {
     
     size_t response_size = headers_size + response->body_size;
 
-    char *response_buffer = (char *)memalloc(response_size + 1);
+    char *response_buffer = (char *) memalloc(response_size + 1);
     if (response_buffer == NULL)
         return 0;
 
@@ -249,17 +255,23 @@ uchar send_http_response(HTTPRequest *request, HTTPResponse *response) {
 }
 
 
-
 void kill_http_connection(HTTPRequest *request) {
     kill_socket(request->fd);
     if (request->body != NULL) free(request->body);
-    free_http_headers(request);
+    free_http_request_headers(request);
     free(request);
     request = NULL;
 }
 
 
 HTTPServer *create_http_server(uchar *server_addr, ushort port, uchar *public_dir) {
+    if (HTTP_SERVER != NULL) {
+        if (!strncmp(HTTP_SERVER->socket_server->server_addr, server_addr, strlen(server_addr)) && HTTP_SERVER->socket_server->port == port) {
+            msglog(ERROR, "HTTP server is already running on %s:%d", server_addr, port);
+            return NULL;
+        }
+    }
+
     if (public_dir == NULL)
         return NULL;
 
@@ -306,6 +318,71 @@ HTTPServer *create_http_server(uchar *server_addr, ushort port, uchar *public_di
     return http_server;
 }
 
+
+short is_route_exists(uchar *route) {
+    ullint hash = get_hash_based_on_route(route);
+    short index = hash % MAX_HTTP_ROUTES;
+    if (HTTP_ROUTES[index].route == NULL)
+        return -1;
+    else {
+        if (!strncmp(HTTP_ROUTES[index].route, route, strlen(route)))
+            return index;
+        else {
+            for (short i = index + 1; i < MAX_HTTP_ROUTES; i++) {
+                if (HTTP_ROUTES[i].route == NULL)
+                    return -1;
+                if (!strncmp(HTTP_ROUTES[i].route, route, strlen(route)))
+                    return i;
+            }
+            for (short i = 0; i < index; i++) {
+                if (HTTP_ROUTES[i].route == NULL)
+                    return -1;
+                if (!strncmp(HTTP_ROUTES[i].route, route, strlen(route)))
+                    return i;
+            }
+        }
+    }
+    return 0;
+}
+
+
+ullint get_hash_based_on_route(uchar *route) {
+    return XXH64(route, strlen(route) + 1, 0);
+}
+
+short get_free_route_index(uchar *route) {
+    ullint hash = get_hash_based_on_route(route);
+    short index = hash % MAX_HTTP_ROUTES;
+    if (HTTP_ROUTES[index].route == NULL)
+        return index;
+    else {
+        for (short i = index + 1; i < MAX_HTTP_ROUTES; i++) {
+            if (HTTP_ROUTES[i].route == NULL)
+                return i;
+        }
+        for (short i = 0; i < index; i++) {
+            if (HTTP_ROUTES[i].route == NULL)
+                return i;
+        }
+    }
+    return -1;
+}
+
+
+uchar route(HTTPServer *server, uchar *route, HTTPCallback *callback) {
+    if (server == NULL || route == NULL || callback == NULL) return 0;
+    // TODO: should be implemented
+    short index = get_free_route_index(route);
+    if (index == -1) {
+        msglog(ERROR, "No free route found for %s", route);
+        return 0;
+    }
+    HTTP_ROUTES[index] = (HTTPRoute) {
+        .route = route,
+        .callback = callback
+    };
+    return 1;
+}
 
 void kill_http_server(HTTPServer *server) {
     if (server == NULL) return;
@@ -377,38 +454,10 @@ ssize_t http_server_callback(SocketConnection *connection) {
     char file_path[MAX_SYS_PATH_LENGTH];
     snprintf(file_path, sizeof(file_path), "%s/%s", HTTP_SERVER->public_dir, http_request->uri);
 
-    if (is_directory_exists(file_path)) {
-        if (CONFIG->http_config.directory_indexing) {
-            char *body = NULL;
-            size_t body_size = 0;
-            if (!get_directory_entries(file_path, http_request->uri, &body, &body_size)) {
-                char *body = "Internal Server Error\n";
-                send_http_status(http_request, 500, body, strlen(body), NULL);
-                kill_http_connection(http_request);
-                return -1;
-            }
-
-            if (body == NULL)
-            {
-                body = strdup("No files or directories found.\n");
-                body_size = strlen(body);
-            }
-
-            char *headers = NULL;
-            set_http_response_header(headers, "Content-Type", "text/html");
-            set_http_response_header(headers, "Content-Length", (uchar *)&body_size);
-            set_http_response_header(headers, "Connection", "Close");
-            send_http_status(http_request, 200, body, body_size, headers);
-            free(body);
-            kill_http_connection(http_request);
-            return 0;
-        }
-        else {
-            char *body = "Forbidden\n";
-            send_http_status(http_request, 403, body, strlen(body), NULL);
-            kill_http_connection(http_request);
-            return -1;
-        }
+    short route_index = is_route_exists(http_request->uri);
+    if (route_index != -1) {
+        HTTP_ROUTES[route_index].callback(http_request);
+        return 0;
     }
     else {
         if (is_file_exist(file_path)) {
@@ -440,21 +489,53 @@ ssize_t http_server_callback(SocketConnection *connection) {
             char *headers = NULL;
             uchar size_str[32];
             snprintf(size_str, sizeof(size_str), "%zu", file_size);
-            set_http_response_header(headers, "Content-Type", mime_type);
-            set_http_response_header(headers, "Content-Length", size_str);
-            set_http_response_header(headers, "Connection", "Close");
-            send_http_status(http_request, 200, file_content, file_size, headers);
+            set_http_response_header(&headers, "Content-Type", mime_type);
+            set_http_response_header(&headers, "Content-Length", size_str);
+            set_http_response_header(&headers, "Connection", "Close");
+            send_http_status(http_request, 200, file_content, file_size, &headers);
             kill_http_connection(http_request);
             free(file_content);
             free(mime_type);
             return 0;
         } else {
-            // TODO: check for routes first, if nothing found, then follow this approach.
-            // Step 6: If this is not URI, search for routes
-            char *body = "File not found\n";
-            send_http_status(http_request, 404, body, strlen(body), NULL);
-            kill_http_connection(http_request);
-            return -1;
+            if (CONFIG->http_config.directory_indexing) {
+                if (is_directory_exists(file_path)) {
+                    char *body = NULL;
+                    size_t body_size = 0;
+                    if (!get_directory_entries(file_path, http_request->uri, &body, &body_size)) {
+                        char *body = "Internal Server Error\n";
+                        send_http_status(http_request, 500, body, strlen(body), NULL);
+                        kill_http_connection(http_request);
+                        return -1;
+                    }
+        
+                    if (body == NULL) {
+                        body = strdup("No files or directories found.\n");
+                        body_size = strlen(body);
+                    }
+        
+                    char *headers = NULL;
+                    set_http_response_header(&headers, "Content-Type", "text/html");
+                    set_http_response_header(&headers, "Content-Length", (uchar *)&body_size);
+                    set_http_response_header(&headers, "Connection", "Close");
+                    send_http_status(http_request, 200, body, body_size, &headers);
+                    kill_http_connection(http_request);
+                    free(body);
+                    return 0;
+                }
+                else {
+                    char *body = "Not found\n";
+                    send_http_status(http_request, 404, body, strlen(body), NULL);
+                    kill_http_connection(http_request);
+                    return -1;
+                }
+            }
+            else {
+                char *body = "Forbidden\n";
+                send_http_status(http_request, 403, body, strlen(body), NULL);
+                kill_http_connection(http_request);
+                return -1;
+            }
         }
     
         kill_http_connection(http_request);

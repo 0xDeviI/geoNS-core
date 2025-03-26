@@ -5,6 +5,7 @@
 #include "libs/config/config.h"
 #include "libs/http/http.h"
 #include "libs/core/embed.h"
+#include "libs/http/routes/router.h"
 
 static const char *const usages[] = {
     "geons-core [options] [[--] args]",
@@ -59,10 +60,15 @@ int main(int argc, const char *argv[]) {
 
     if (server) {
         //* Running Server
-        HTTPServer *server = create_http_server(CONFIG->geons_config.geons_server_addr, 8000, "../");
+        HTTPServer *server = create_http_server(
+            CONFIG->geons_config.geons_server_addr, 
+            CONFIG->http_config.server_port, 
+            "../"
+        );
         if (server != NULL) {
+            setup_geons_http_router(server);
             handle_server_socket(server->socket_server, &http_server_callback);
-            sleep(60);
+            sleep(10);
             kill_http_server(server);
         }
 

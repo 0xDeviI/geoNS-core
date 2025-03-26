@@ -118,10 +118,12 @@ void *server_socket_thread(void *arg) {
         }
         client_data->server_callback = server->callback;
         client_data->head = &server->connections;
-        connection->peer_info.server_addr = server->server_addr;
-        connection->peer_info.server_port = server->port;
-        connection->peer_info.client_addr = inet_ntoa(server->address.sin_addr);
-        connection->peer_info.client_port = ntohs(server->address.sin_port);
+        connection->peer_info = (PeerInfo) {
+            .server_addr = server->server_addr,
+            .server_port = server->port,
+            .client_addr = inet_ntoa(server->address.sin_addr),
+            .client_port = ntohs(server->address.sin_port),
+        };
         client_data->current = connection;
 
 
@@ -132,7 +134,7 @@ void *server_socket_thread(void *arg) {
         );
 
 
-        if (pthread_create(&thread_id, NULL, handle_client, (void *)&client_data) != 0) {
+        if (pthread_create(&thread_id, NULL, handle_client, (void *) client_data) != 0) {
             msglog(ERROR, "%s:%d failed on creating thread to handle client requests", server->server_addr, server->port);
             remove_connection(&server->connections, connection);
         } else {
@@ -241,15 +243,14 @@ void kill_socket(int fd) {
 
 
 void *handle_client(void *arg) {
-    ClientData **client_data = (ClientData **) arg;
-    SocketConnection **head = (*client_data)->head;
-    SocketConnection *connection = (*client_data)->current;
-    ServerCallback *callback = (*client_data)->server_callback;
+    ClientData *client_data = (ClientData *) arg;
+    SocketConnection **head = client_data->head;
+    SocketConnection *connection = client_data->current;
+    ServerCallback *callback = client_data->server_callback;
     PeerInfo peer_info = connection->peer_info;
-    free(*client_data);
-    *client_data = NULL;
+    free(client_data);
+    client_data = NULL;
 
-    // char *buffer = connection->buffer;
     connection->buffer = (char *) memalloc(connection->buffer_size_limit);
     if (connection->buffer == NULL) {
         perror("Memory error");

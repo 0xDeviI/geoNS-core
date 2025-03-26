@@ -8,6 +8,7 @@ typedef unsigned short              ushort;
 typedef unsigned char               uchar;
 typedef unsigned long               ulong;
 typedef long long int               llint;
+typedef unsigned long long int      ullint;
 typedef pthread_t                   thread;
 
 #endif // !GEONS_TYPE_H
