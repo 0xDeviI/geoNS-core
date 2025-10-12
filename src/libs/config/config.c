@@ -29,7 +29,6 @@ uchar load_config(void) {
     strncpy(CONFIG->geons_config.geons_server_addr, geons_server_addr, sizeof(CONFIG->geons_config.geons_server_addr) - 1);
     CONFIG->geons_config.geons_server_addr[strlen(CONFIG->geons_config.geons_server_addr)] = '\0';
     CONFIG->geons_config.node_gateway_port = json_object_dotget_number(config_json_object, "server.node.server_port");
-    CONFIG->geons_config.data_gateway_port = json_object_dotget_number(config_json_object, "server.data.server_port");
     CONFIG->http_config.accept_any_method = json_object_dotget_boolean(config_json_object, "server.http.accept_any_method");
     CONFIG->http_config.directory_indexing = json_object_dotget_boolean(config_json_object, "server.http.directory_indexing");
     CONFIG->http_config.trim_large_headers = json_object_dotget_boolean(config_json_object, "server.http.trim_large_headers");
@@ -54,7 +53,6 @@ JSON_Value *get_default_config(uchar is_template) {
     // GeoNS Server configs
     json_object_dotset_string(json_object, "server.server_addr", !is_template ? DEFAULT_GEONS_SERVER_ADDR : "");
     json_object_dotset_number(json_object, "server.node.server_port", !is_template ? DEFAULT_NODE_GATEWAY_PORT : 0);
-    json_object_dotset_number(json_object, "server.data.server_port", !is_template ? DEFAULT_DATA_GATEWAY_PORT : 0);
 
     // HTTP configs
     json_object_dotset_number(json_object, "server.http.server_port", 8000);

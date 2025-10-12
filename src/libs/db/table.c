@@ -1,50 +1,98 @@
 #include "table.h"
 
 Table GEONS_LEDGER_DB_TABLES[] = {
-    {"logs", "(\
-        id INTEGER PRIMARY KEY AUTOINCREMENT,\
-        region TEXT,\
-        location TEXT,\
-        service TEXT,\
-        delay INTEGER,\
-        status TEXT CHECK (status IN ('success', 'failed')),\
-        device TEXT CHECK (LENGTH(device) <= 128),\
-        isp TEXT CHECK (LENGTH(isp) <= 64),\
-        internet_type TEXT CHECK (internet_type IN ('phone', 'modem')),\
-        timestamp INTEGER\
-    )"},
-    {"services", "(\
-        id INTEGER PRIMARY KEY AUTOINCREMENT,\
-        service_name TEXT UNIQUE,\
-        service_url TEXT,\
-        is_local NUMBER\
-    )"}
+    {
+        .name="logs",
+        .schema="(\
+            id INTEGER PRIMARY KEY AUTOINCREMENT,\
+            region TEXT,\
+            location TEXT,\
+            service TEXT,\
+            delay INTEGER,\
+            status TEXT CHECK (status IN ('success', 'failed')),\
+            device TEXT CHECK (LENGTH(device) <= 128),\
+            isp TEXT CHECK (LENGTH(isp) <= 64),\
+            internet_type TEXT CHECK (internet_type IN ('phone', 'modem')),\
+            timestamp INTEGER\
+        )"
+    },
+    {
+        .name="services",
+        .schema="(\
+            id INTEGER PRIMARY KEY AUTOINCREMENT,\
+            service_name TEXT UNIQUE,\
+            service_url TEXT,\
+            is_local NUMBER\
+        )"
+    }
 };
 
 Table GEONS_LOCAL_DB_TABLES[] = {
-    {"settings", "(\
-        id INTEGER PRIMARY KEY AUTOINCREMENT,\
-        setting_key TEXT UNIQUE,\
-        setting_value TEXT\
-    )"},
-    {"nodes", "(\
-        id INTEGER PRIMARY KEY AUTOINCREMENT,\
-        server TEXT CHECK (LENGTH(server) <= 15),\
-        node_gateway SHORT,\
-        status TEXT CHECK (status IN ('active', 'inactive'))\
-    )"}
+    {
+        .name="settings",
+        .schema="(\
+            id INTEGER PRIMARY KEY AUTOINCREMENT,\
+            setting_key TEXT UNIQUE,\
+            setting_value TEXT\
+        )"
+    },
+    {
+        .name="nodes",
+        .schema="(\
+            id INTEGER PRIMARY KEY AUTOINCREMENT,\
+            server TEXT CHECK (LENGTH(server) <= 15),\
+            node_gateway SHORT,\
+            status TEXT CHECK (status IN ('active', 'inactive'))\
+        )"
+    }
 };
 
 Service GEONS_DEFAULT_SERVICES[] = {
-    {"Github", "https://github.com/", 0},
-    {"Google", "https://www.google.com/", 0},
-    {"Gmail", "https://www.google.com/gmail/about/", 0},
-    {"Android Developer", "https://developer.android.com/", 0},
-    {"Wikipedia", "https://www.wikipedia.org/", 0},
-    {"PlayStation", "https://www.playstation.com/en-ie/", 0},
-    {"Aparat", "https://www.aparat.com/", 1},
-    {"Filimo", "https://www.filimo.com/", 1},
-    {"Digikala", "https://www.digikala.com/", 1}
+    {
+        .name = "Github",
+        .url = "https://github.com/",
+        .is_local = 0
+    },
+    {
+        .name = "Google",
+        .url = "https://www.google.com/",
+        .is_local = 0
+    },
+    {
+        .name = "Gmail",
+        .url = "https://www.google.com/gmail/about/",
+        .is_local = 0
+    },
+    {
+        .name = "Android Developer",
+        .url = "https://developer.android.com/",
+        .is_local = 0
+    },
+    {
+        .name = "Wikipedia",
+        .url = "https://www.wikipedia.org/",
+        .is_local = 0
+    },
+    {
+        .name = "PlayStation",
+        .url = "https://www.playstation.com/en-ie/",
+        .is_local = 0
+    },
+    {
+        .name = "Aparat",
+        .url = "https://www.aparat.com/",
+        .is_local = 1
+    },
+    {
+        .name = "Filimo",
+        .url = "https://www.filimo.com/",
+        .is_local = 1
+    },
+    {
+        .name = "Digikala",
+        .url = "https://www.digikala.com/",
+        .is_local = 1
+    }
 };
 
 
