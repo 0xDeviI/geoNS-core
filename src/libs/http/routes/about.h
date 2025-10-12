@@ -3,7 +3,7 @@
 
 #include "../http.h"
 
-void callback_about(void *args, ...) {
+static inline void callback_about(void *args, ...) {
     HTTPRequest *request = (HTTPRequest *) args;
     char *body = "<h1>Welcome to about page!</h1>";
     uchar body_size[32];

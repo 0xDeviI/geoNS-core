@@ -31,7 +31,6 @@ Table GEONS_LOCAL_DB_TABLES[] = {
         id INTEGER PRIMARY KEY AUTOINCREMENT,\
         server TEXT CHECK (LENGTH(server) <= 15),\
         node_gateway SHORT,\
-        data_gateway SHORT,\
         status TEXT CHECK (status IN ('active', 'inactive'))\
     )"}
 };
@@ -52,10 +51,9 @@ Service GEONS_DEFAULT_SERVICES[] = {
 uchar remove_node(Database *db, Node *node) {
     uchar sql_query[MAX_SQL_QUERY_SIZE];
     snprintf(sql_query, sizeof(sql_query),
-        "DELETE FROM nodes WHERE server = '%s' AND node_gateway = %d AND data_gateway = %d;",
+        "DELETE FROM nodes WHERE server = '%s' AND node_gateway = %d;",
         node->server_addr,
-        node->node_gateway,
-        node->data_gateway
+        node->node_gateway
     );
 
     return db_exec(db, sql_query);
@@ -93,7 +91,6 @@ char get_all_active_nodes(Database *db, Node **nodes, uchar size_of_nodes) {
         uchar id = sqlite3_column_int(stmt, 0);
         uchar *server_addr = (uchar *) sqlite3_column_text(stmt, 1);
         ushort node_gateway = sqlite3_column_int(stmt, 2);
-        ushort data_gateway = sqlite3_column_int(stmt, 3);
         uchar *status = (uchar *) sqlite3_column_text(stmt, 4);
         strncpy(node->server_addr, server_addr, sizeof(node->server_addr) - 1);
         node->server_addr[strlen(node->server_addr)] = '\0';
@@ -101,7 +98,6 @@ char get_all_active_nodes(Database *db, Node **nodes, uchar size_of_nodes) {
         node->status[strlen(node->status)] = '\0';
         node->id = id;
         node->node_gateway = node_gateway;
-        node->data_gateway = data_gateway;
         nodes[nodes_count++] = node;
     }
     sqlite3_finalize(stmt);
@@ -109,7 +105,7 @@ char get_all_active_nodes(Database *db, Node **nodes, uchar size_of_nodes) {
 }
 
 
-uchar insert_new_node(Database *db, uchar *server_addr, ushort node_gateway_port, ushort data_gateway_port) {
+uchar insert_new_node(Database *db, uchar *server_addr, ushort node_gateway_port) {
     // returns 0 if receives any error
     // returns 1 if successfully adds new node
     // returns 2 if node has been already added
@@ -118,10 +114,9 @@ uchar insert_new_node(Database *db, uchar *server_addr, ushort node_gateway_port
     
     uchar sql_query[MAX_SQL_QUERY_SIZE];
     snprintf(sql_query, sizeof(sql_query), 
-        "SELECT * FROM nodes WHERE server = '%s' AND node_gateway = %d AND data_gateway = %d;",
+        "SELECT * FROM nodes WHERE server = '%s' AND node_gateway = %d;",
         server_addr,
-        node_gateway_port,
-        data_gateway_port
+        node_gateway_port
     );
 
     sqlite3_stmt *stmt;
@@ -140,10 +135,9 @@ uchar insert_new_node(Database *db, uchar *server_addr, ushort node_gateway_port
 
     sqlite3_finalize(stmt);
     snprintf(sql_query, sizeof(sql_query), 
-        "INSERT INTO nodes (server, node_gateway, data_gateway, status) VALUES ('%s', %d, %d, 'active')",
+        "INSERT INTO nodes (server, node_gateway, status) VALUES ('%s', %d, 'active')",
         server_addr,
-        node_gateway_port,
-        data_gateway_port
+        node_gateway_port
     );
 
     return db_exec(db, sql_query);

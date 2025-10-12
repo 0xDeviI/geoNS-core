@@ -19,7 +19,6 @@
 // GeoNS-Protocol constants
 #define DEFAULT_GEONS_SERVER_ADDR               "0.0.0.0"
 #define DEFAULT_NODE_GATEWAY_PORT               9060
-#define DEFAULT_DATA_GATEWAY_PORT               6090
 #define MAX_GEONSP_BUFFER_SIZE                  4096
 #define MAX_GEONSP_METHOD_NAME                  64
 

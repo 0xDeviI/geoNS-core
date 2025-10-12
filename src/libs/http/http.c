@@ -172,6 +172,7 @@ void free_http_request_headers(HTTPRequest *request) {
 
 
 uchar set_http_response_header(char **headers, uchar *header_name, uchar *header_value) {
+    // TODO: make this a variadic function to accept formatting
     if (headers == NULL || header_name == NULL || header_value == NULL)
         return 0;
     

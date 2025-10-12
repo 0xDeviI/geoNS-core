@@ -3,9 +3,7 @@
 #include "libs/argparse/argparse.h"
 #include "libs/logger/logger.h"
 #include "libs/config/config.h"
-#include "libs/http/http.h"
 #include "libs/core/embed.h"
-#include "libs/http/routes/router.h"
 
 static const char *const usages[] = {
     "geons-core [options] [[--] args]",
@@ -60,24 +58,12 @@ int main(int argc, const char *argv[]) {
 
     if (server) {
         //* Running Server
-        HTTPServer *server = create_http_server(
-            CONFIG->geons_config.geons_server_addr, 
-            CONFIG->http_config.server_port, 
-            "../"
-        );
+        GeoNSServer *server = create_geons_server();
+
         if (server != NULL) {
-            setup_geons_http_router(server);
-            handle_server_socket(server->socket_server, &http_server_callback);
-            sleep(10);
-            kill_http_server(server);
+            sleep(15); //? MemCheck: killing the server after some seconds
+            kill_geons_server(server);
         }
-
-
-        // GeoNSServer *server = create_geons_server();
-        // if (server != NULL) {
-        //     sleep(15); //? MemCheck: killing the server after some seconds
-        //     kill_geons_server(server);
-        // }
     }
     else {
         // TODO:

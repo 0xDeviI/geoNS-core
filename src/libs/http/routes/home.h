@@ -3,7 +3,7 @@
 
 #include "../http.h"
 
-void callback_home(void *args, ...) {
+static inline void callback_home(void *args, ...) {
     HTTPRequest *request = (HTTPRequest *) args;
     char *body = "<h1>Welcome to GeoNS</h1>";
     uchar body_size[32];

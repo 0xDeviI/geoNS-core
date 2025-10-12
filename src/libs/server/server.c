@@ -2,6 +2,8 @@
 #include "../geonsp/geonsp.h"
 #include "../logger/logger.h"
 #include "../config/config.h"
+#include "../http/http.h"
+#include "../http/routes/router.h"
 
 
 Node INIT_NODES[] = {
@@ -9,7 +11,6 @@ Node INIT_NODES[] = {
         .id=0, 
         .server_addr=DEFAULT_GEONS_SERVER_ADDR, 
         .node_gateway=DEFAULT_NODE_GATEWAY_PORT, 
-        .data_gateway=DEFAULT_DATA_GATEWAY_PORT, 
         .status="active"
     }
 };
@@ -35,7 +36,6 @@ uchar connect_localdb_node_servers() {
         .id=0,
         .server_addr="",
         .node_gateway=CONFIG->geons_config.node_gateway_port,
-        .data_gateway=CONFIG->geons_config.data_gateway_port,
         .status="active"
     };
     strncpy(source_node.server_addr, CONFIG->geons_config.geons_server_addr, sizeof(source_node.server_addr) - 1);
@@ -66,7 +66,6 @@ uchar connect_init_node_servers() {
             .id=0,
             .server_addr="",
             .node_gateway=CONFIG->geons_config.node_gateway_port,
-            .data_gateway=CONFIG->geons_config.data_gateway_port,
             .status="active"
         };
         strncpy(source_node.server_addr, CONFIG->geons_config.geons_server_addr, sizeof(source_node.server_addr) - 1);
@@ -126,12 +125,21 @@ GeoNSServer *create_geons_server() {
     server->node_gateway_server->buffer_size_per_client = MAX_GEONSP_BUFFER_SIZE;
     handle_server_socket(server->node_gateway_server, &node_server_callback);
 
-    // creating data socket server (SHOULD CHECK FOR NULL SERVER SOCKET!)
-    // server->data_gateway_server = open_server_socket(CONFIG->geons_config.geons_server_addr, CONFIG->geons_config.data_gateway_port);
-    // handle_server_socket(server->data_gateway_server);
+    HTTPServer *http_server = create_http_server(
+        CONFIG->geons_config.geons_server_addr, 
+        CONFIG->http_config.server_port, 
+        "../"
+    );
+    if (http_server == NULL) {
+        msglog(ERROR, "Creating HTTP server failed on %s:%d", CONFIG->geons_config.geons_server_addr, CONFIG->http_config.server_port);
+        kill_geons_server(server);
+        return NULL;
+    }
 
-    // TODO: setting up client API
-    // .....
+    // Setting up HTTP server
+    setup_geons_http_router(http_server);
+    handle_server_socket(http_server->socket_server, &http_server_callback);
+
 
     // connecting databases
     db_connect(server->ledger_db);
@@ -152,7 +160,7 @@ void kill_geons_server(GeoNSServer *server) {
 
         // killing socket servers
         kill_socket_server(server->node_gateway_server);
-        // kill_socket_server(server->data_gateway_server);
+        kill_http_server(server->http_server);
         
         free(server);
         server = NULL;

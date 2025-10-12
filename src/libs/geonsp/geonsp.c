@@ -18,8 +18,7 @@ uchar handle_node_info_exchange(Database *db, Node *source_node, Node *destinati
             uchar buffer[MAX_GEONSP_BUFFER_SIZE];
             JSON_Value *request = construct_add_node_request(
                 source_node->server_addr,
-                source_node->node_gateway,
-                source_node->data_gateway
+                source_node->node_gateway
             );
             uchar *request_payload = json_serialize_to_string(request);
 
@@ -51,9 +50,8 @@ uchar handle_node_info_exchange(Database *db, Node *source_node, Node *destinati
                 uchar *server_addr = (uchar *)json_object_get_string(node, "server");
                 if (!is_my_ip(server_addr)) {
                     ushort node_gateway = json_object_get_number(node, "node");
-                    ushort data_gateway = json_object_get_number(node, "data");
                     uchar *status = (uchar *)json_object_get_string(node, "status");
-                    uchar result = insert_new_node(db, server_addr, node_gateway, data_gateway);
+                    uchar result = insert_new_node(db, server_addr, node_gateway);
                     if (!result)
                         msglog(ERROR, "Failed inserting new node %s:%d into localdb.", destination_node->server_addr, destination_node->node_gateway);
                     else if (result == 1)
@@ -86,12 +84,11 @@ JSON_Value *construct_base_geonsp_message(uchar *geonsp_message) {
     return json_value;
 }
 
-JSON_Value *construct_add_node_request(uchar *server_addr, ushort node_gateway_port, ushort data_gateway_port) {
+JSON_Value *construct_add_node_request(uchar *server_addr, ushort node_gateway_port) {
     JSON_Value *json_value = construct_base_geonsp_message(GEONSP_MSG_ADD_NODE);
     JSON_Object *json_object = json_value_get_object(json_value);
     json_object_dotset_string(json_object, "data.server_addr", server_addr);
     json_object_dotset_number(json_object, "data.node_gateway_port", node_gateway_port);
-    json_object_dotset_number(json_object, "data.data_gateway_port", data_gateway_port);
     return json_value;
 }
 
@@ -237,7 +234,6 @@ ssize_t node_server_callback(SocketConnection *connection) {
                                 JSON_Object *node_json_object = json_value_get_object(node_json_value);
                                 json_object_set_string(node_json_object, "server", node->server_addr);
                                 json_object_set_number(node_json_object, "node", node->node_gateway);
-                                json_object_set_number(node_json_object, "data", node->data_gateway);
                                 json_object_set_string(node_json_object, "status", node->status);
                                 json_array_append_value(json_array, node_json_value);
                                 free(node);
@@ -261,10 +257,9 @@ ssize_t node_server_callback(SocketConnection *connection) {
                 else {
                     uchar *server_addr = (uchar *) json_object_dotget_string(request_json, "data.server_addr");
                     ushort node_gateway_port = (ushort) json_object_dotget_number(request_json, "data.node_gateway_port");
-                    ushort data_gateway_port = (ushort) json_object_dotget_number(request_json, "data.data_gateway_port");
 
                     db_connect(local_db);
-                    uchar insert_node = insert_new_node(local_db, server_addr, node_gateway_port, data_gateway_port);
+                    uchar insert_node = insert_new_node(local_db, server_addr, node_gateway_port);
                     db_disconnect(local_db);
 
                     if (!insert_node)

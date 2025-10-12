@@ -5,13 +5,15 @@
 #include "../socket/socket.h"
 #include "../parson/parson.h"
 #include "../db/db.h"
+#include "../http/specs.h"
+
 
 typedef struct sGeoNSServer
 {
     Database *ledger_db;
     Database *local_db;
     SocketServer *node_gateway_server;
-    SocketServer *data_gateway_server;
+    HTTPServer *http_server;
 } GeoNSServer;
 
 typedef struct sNode
@@ -19,7 +21,6 @@ typedef struct sNode
     uchar id;
     uchar server_addr[MAX_IPV6_LENGTH + 1];
     ushort node_gateway;
-    ushort data_gateway;
     uchar status[16];
 } Node;
 
