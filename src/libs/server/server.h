@@ -1,6 +1,8 @@
 #ifndef GEONS_SERVER_H
 #define GEONS_SERVER_H 1
 
+#include <signal.h>
+#include "../io/signal.h"
 #include "../core/core.h"
 #include "../socket/socket.h"
 #include "../parson/parson.h"
@@ -32,5 +34,6 @@ uchar connect_localdb_node_servers();
 uchar connect_init_node_servers();
 GeoNSServer *create_geons_server();
 void kill_geons_server(GeoNSServer *server);
+uchar serve_geons(GeoNSServer *server);
 
 #endif // !GEONS_SERVER_H

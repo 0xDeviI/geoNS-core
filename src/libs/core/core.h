@@ -17,6 +17,7 @@
 #include "types.h"
 
 extern uchar is_debugging;
+extern uchar is_geons_running;
 
 void *memalloc(size_t size);
 

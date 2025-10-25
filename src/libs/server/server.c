@@ -167,3 +167,13 @@ void kill_geons_server(GeoNSServer *server) {
         msglog(DEBUG, "GeoNSServer shut down.");
     }
 }
+
+
+uchar serve_geons(GeoNSServer *server) {
+    is_geons_running = 1;
+    signal(SIGINT, SIGINT_HANDLER);
+    while (is_geons_running != 0) {
+        sleep(1);
+    }
+    return 0;
+}

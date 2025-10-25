@@ -61,8 +61,8 @@ int main(int argc, const char *argv[]) {
         GeoNSServer *server = create_geons_server();
 
         if (server != NULL) {
-            sleep(15); //? MemCheck: killing the server after some seconds
-            kill_geons_server(server);
+            if (serve_geons(server) == 0)
+                kill_geons_server(server);
         }
     }
     else {

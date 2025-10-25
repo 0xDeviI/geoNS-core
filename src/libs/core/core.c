@@ -2,6 +2,7 @@
 
 
 uchar is_debugging = 0;
+uchar is_geons_running = 0;
 
 
 void *memalloc(size_t size) {
