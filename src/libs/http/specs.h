@@ -61,8 +61,15 @@ typedef struct sHTTPServer {
 
 typedef void (HTTPCallback)(void *args, ...);
 
+typedef struct sRoute {
+    uchar *value;
+    struct sRoute *next;
+    uchar is_parametric : 1;
+} Route;
+
 typedef struct sHTTPRoute {
-    uchar *route;
+    Route *route;
+    ushort segment_size;
     HTTPCallback *callback;
 } HTTPRoute;
 

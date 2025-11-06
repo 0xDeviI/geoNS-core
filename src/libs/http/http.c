@@ -77,6 +77,7 @@ const HTTPStatusCode HTTP_STATUSES[] = {
 
 HTTPRoute HTTP_ROUTES[MAX_HTTP_ROUTES];
 HTTPServer *HTTP_SERVER = NULL;
+ushort SIZE_OF_HTTP_ROUTES = 0;
 
 
 char *get_reason_phrase(ushort status_code) {
@@ -320,70 +321,175 @@ HTTPServer *create_http_server(uchar *server_addr, ushort port, uchar *public_di
 }
 
 
-short is_route_exists(uchar *route) {
-    ullint hash = get_hash_based_on_route(route);
-    short index = hash % MAX_HTTP_ROUTES;
-    if (HTTP_ROUTES[index].route == NULL)
-        return -1;
-    else {
-        if (!strncmp(HTTP_ROUTES[index].route, route, strlen(route)))
-            return index;
-        else {
-            for (short i = index + 1; i < MAX_HTTP_ROUTES; i++) {
-                if (HTTP_ROUTES[i].route == NULL)
-                    return -1;
-                if (!strncmp(HTTP_ROUTES[i].route, route, strlen(route)))
-                    return i;
-            }
-            for (short i = 0; i < index; i++) {
-                if (HTTP_ROUTES[i].route == NULL)
-                    return -1;
-                if (!strncmp(HTTP_ROUTES[i].route, route, strlen(route)))
-                    return i;
+HTTPRoute *is_route_exists(uchar *requested_route, StringMap *out_params) {
+    if (!requested_route || !out_params) return NULL;
+
+    // ✅ Special case for "/"
+    if (strcmp(requested_route, "/") == 0) {
+        for (ushort i = 0; i < SIZE_OF_HTTP_ROUTES; i++) {
+            if (HTTP_ROUTES[i].segment_size == 0) {
+                return &HTTP_ROUTES[i];
             }
         }
+        return NULL;
     }
-    return 0;
-}
 
+    // Copy URI (strtok_r modifies input)
+    ushort req_len = strlen(requested_route);
+    uchar *copy_uri = memalloc(req_len + 1);
+    if (!copy_uri) return NULL;
+    strcpy(copy_uri, requested_route);
 
-ullint get_hash_based_on_route(uchar *route) {
-    return XXH64(route, strlen(route) + 1, 0);
-}
+    // Tokenize once
+    char *ptr = NULL;
+    char *seg = strtok_r(copy_uri, "/", &ptr);
 
-short get_free_route_index(uchar *route) {
-    ullint hash = get_hash_based_on_route(route);
-    short index = hash % MAX_HTTP_ROUTES;
-    if (HTTP_ROUTES[index].route == NULL)
-        return index;
-    else {
-        for (short i = index + 1; i < MAX_HTTP_ROUTES; i++) {
-            if (HTTP_ROUTES[i].route == NULL)
-                return i;
+    uchar *req_segments[128];
+    ushort req_count = 0;
+
+    while (seg != NULL) {
+        ushort len = strlen(seg);
+        uchar *cpy = memalloc(len + 1);
+        strcpy(cpy, seg);
+
+        req_segments[req_count++] = cpy;
+        seg = strtok_r(NULL, "/", &ptr);
+    }
+
+    // ✅ Match & extract params in ONE PASS
+    for (ushort i = 0; i < SIZE_OF_HTTP_ROUTES; i++) {
+        HTTPRoute *route = &HTTP_ROUTES[i];
+
+        if (route->segment_size != req_count)
+            continue;
+
+        Route *rseg = route->route;
+        uchar matched = 1;
+
+        // Reset parameter map for this match attempt
+        // string_map_free(out_params);
+
+        for (ushort idx = 0; idx < req_count; idx++) {
+            if (!rseg) { matched = 0; break; }
+
+            if (!rseg->is_parametric) {
+                // Must match exactly
+                if (strcmp(rseg->value, req_segments[idx]) != 0) {
+                    matched = 0;
+                    break;
+                }
+            } else {
+                if (out_params != NULL) {
+                    // ✅ Parametric: extract value
+                    // rseg->value = param name
+                    // req_segments[idx] = actual value
+                    string_map_put(out_params, rseg->value, req_segments[idx]);
+                }
+            }
+
+            rseg = rseg->next;
         }
-        for (short i = 0; i < index; i++) {
-            if (HTTP_ROUTES[i].route == NULL)
-                return i;
+
+        if (matched) {
+            free(copy_uri);
+            return route;
         }
     }
-    return -1;
+
+    free(copy_uri);
+    return NULL;
 }
 
 
-uchar route(HTTPServer *server, uchar *route, HTTPCallback *callback) {
-    if (server == NULL || route == NULL || callback == NULL) return 0;
-    // TODO: should be implemented
-    short index = get_free_route_index(route);
-    if (index == -1) {
-        msglog(ERROR, "No free route found for %s", route);
+uchar route(HTTPServer *server, uchar *route_str, HTTPCallback *callback) {
+    if (!server || !route_str || !callback) return 0;
+
+    if (SIZE_OF_HTTP_ROUTES >= MAX_HTTP_ROUTES) {
+        msglog(ERROR, "Can't route for '%s'. This version of geoNS supports %d routes.",
+               route_str, MAX_HTTP_ROUTES);
         return 0;
     }
-    HTTP_ROUTES[index] = (HTTPRoute) {
-        .route = route,
-        .callback = callback
+
+    // Proper copy of the route string (with null terminator)
+    ushort route_len = strlen(route_str);
+    uchar *route_copy = memalloc(route_len + 1);
+    if (!route_copy) {
+        perror("Memory error");
+        return 0;
+    }
+    strcpy(route_copy, route_str);
+
+    // Tokenization
+    char *route_ptr = NULL;
+    char *segment_str = strtok_r(route_copy, "/", &route_ptr);
+
+    Route *head = NULL;
+    Route *tail = NULL;
+    ushort segment_count = 0;
+
+    while (segment_str != NULL) {
+
+        Route *node = memalloc(sizeof(Route));
+        if (!node) {
+            perror("Memory error");
+            free(route_copy);
+            return 0;
+        }
+        node->next = NULL;
+
+        ushort seg_len = strlen(segment_str);
+        uchar is_parametric = (seg_len >= 2 &&
+                               segment_str[0] == '{' &&
+                               segment_str[seg_len - 1] == '}');
+
+        if (!is_parametric) {
+            // Normal segment → copy string
+            uchar *value = memalloc(seg_len + 1);
+            strcpy(value, segment_str);
+
+            node->value = value;
+            node->is_parametric = 0;
+        } else {
+            // Parametric → remove { }
+            ushort name_len = seg_len - 2;
+            uchar *param_name = memalloc(name_len + 1);
+            strncpy(param_name, segment_str + 1, name_len);
+            param_name[name_len] = '\0';
+
+            node->value = param_name;
+            node->is_parametric = 1;
+        }
+
+        // Append to linked list
+        if (!head) {
+            head = tail = node;
+        } else {
+            tail->next = node;
+            tail = node;
+        }
+
+        segment_count++;
+
+        segment_str = strtok_r(NULL, "/", &route_ptr);
+    }
+
+    // No segments → invalid route
+    if (segment_count == 0) {
+        free(route_copy);
+        return 0;
+    }
+
+    // Store route definition
+    HTTP_ROUTES[SIZE_OF_HTTP_ROUTES++] = (HTTPRoute) {
+        .route = head,
+        .callback = callback,
+        .segment_size = segment_count
     };
+
+    free(route_copy);
     return 1;
 }
+
 
 void kill_http_server(HTTPServer *server) {
     if (server == NULL) return;
@@ -455,9 +561,11 @@ ssize_t http_server_callback(SocketConnection *connection) {
     char file_path[MAX_SYS_PATH_LENGTH];
     snprintf(file_path, sizeof(file_path), "%s/%s", HTTP_SERVER->public_dir, http_request->uri);
 
-    short route_index = is_route_exists(http_request->uri);
-    if (route_index != -1) {
-        HTTP_ROUTES[route_index].callback(http_request);
+    StringMap *parameter_map = create_string_map();
+    HTTPRoute *route = is_route_exists(http_request->uri, parameter_map);
+    if (route != NULL) {
+        // HERE
+        route->callback(http_request, parameter_map);
         return 0;
     }
     else {
