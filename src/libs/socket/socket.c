@@ -125,6 +125,7 @@ void *server_socket_thread(void *arg) {
             .client_port = ntohs(server->address.sin_port),
         };
         client_data->current = connection;
+        client_data->meta = server->meta;
 
 
         msglog(DEBUG, 
@@ -158,7 +159,7 @@ void handle_server_socket(SocketServer *server, ServerCallback *server_callback)
 }
 
 
-SocketServer *open_server_socket(uchar *server_addr, ushort port) {
+SocketServer *open_server_socket(uchar *server_addr, ushort port, void *meta) {
     SocketServer *server = (SocketServer *) memalloc(sizeof(SocketServer));
     if (server == NULL) {
         perror("Memory error");
@@ -170,6 +171,7 @@ SocketServer *open_server_socket(uchar *server_addr, ushort port) {
     server->is_alive = 0;
     server->buffer_size_per_client = BASE_SOCKET_BUFFER_SIZE;
     server->connections = NULL;
+    server->meta = meta != NULL ? meta : NULL;
     
     if ((server->fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
         msglog(ERROR, "Failed to open socket on %s:%d", server->server_addr, server->port);
@@ -247,6 +249,7 @@ void *handle_client(void *arg) {
     SocketConnection **head = client_data->head;
     SocketConnection *connection = client_data->current;
     ServerCallback *callback = client_data->server_callback;
+    void *meta = client_data->meta;
     PeerInfo peer_info = connection->peer_info;
     free(client_data);
     client_data = NULL;
@@ -262,7 +265,7 @@ void *handle_client(void *arg) {
         // Callback interpretations:
         // cb=-1  -> There was an error
         // cb=0   -> Success, recv with 0
-        callback_result = callback(connection);
+        callback_result = callback(connection, meta);
         if (callback_result == -1) {
             recv(connection->fd, connection->buffer, connection->buffer_size, 0);
             break;

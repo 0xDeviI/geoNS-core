@@ -75,10 +75,6 @@ const HTTPStatusCode HTTP_STATUSES[] = {
     {511, "Network Authentication Required"}
 };
 
-HTTPRoute HTTP_ROUTES[MAX_HTTP_ROUTES];
-HTTPServer *HTTP_SERVER = NULL;
-ushort SIZE_OF_HTTP_ROUTES = 0;
-
 
 char *get_reason_phrase(ushort status_code) {
     ushort size_of_status_codes = sizeof(HTTP_STATUSES) / sizeof(HTTP_STATUSES[0]);
@@ -267,13 +263,6 @@ void kill_http_connection(HTTPRequest *request) {
 
 
 HTTPServer *create_http_server(uchar *server_addr, ushort port, uchar *public_dir) {
-    if (HTTP_SERVER != NULL) {
-        if (!strncmp(HTTP_SERVER->socket_server->server_addr, server_addr, strlen(server_addr)) && HTTP_SERVER->socket_server->port == port) {
-            msglog(ERROR, "HTTP server is already running on %s:%d", server_addr, port);
-            return NULL;
-        }
-    }
-
     if (public_dir == NULL)
         return NULL;
 
@@ -290,14 +279,7 @@ HTTPServer *create_http_server(uchar *server_addr, ushort port, uchar *public_di
         msglog(ERROR, "Public directory %s does not exist for HTTP server.", public_dir_path);
         return NULL;
     }
-    
-    SocketServer *socket_server = open_server_socket(server_addr, port);
-    if (socket_server == NULL) {
-        msglog(ERROR, "Failed while creating HTTP server on %s:%d", server_addr, port);
-        return NULL;
-    }
 
-    socket_server->buffer_size_per_client = BASE_HTTP_REQUEST_SIZE;
     HTTPServer *http_server = (HTTPServer *) memalloc(sizeof(HTTPServer));
     if (http_server == NULL) {
         perror("Memory error");
@@ -311,24 +293,30 @@ HTTPServer *create_http_server(uchar *server_addr, ushort port, uchar *public_di
         free(http_server);
         return NULL;
     }
+    
+    SocketServer *socket_server = open_server_socket(server_addr, port, (void *) http_server);
+    if (socket_server == NULL) {
+        msglog(ERROR, "Failed while creating HTTP server on %s:%d", server_addr, port);
+        return NULL;
+    }
 
+    socket_server->buffer_size_per_client = BASE_HTTP_REQUEST_SIZE;
     http_server->socket_server = socket_server;
     strncpy(http_server->public_dir, public_dir_path, public_dir_path_size);
     http_server->public_dir[public_dir_path_size] = '\0';
 
-    HTTP_SERVER = http_server;
     return http_server;
 }
 
 
-HTTPRoute *is_route_exists(uchar *requested_route, StringMap *out_params) {
+HTTPRoute *is_route_exists(HTTPServer *server, uchar *requested_route, StringMap *out_params) {
     if (!requested_route || !out_params) return NULL;
 
     // ✅ Special case for "/"
     if (strcmp(requested_route, "/") == 0) {
-        for (ushort i = 0; i < SIZE_OF_HTTP_ROUTES; i++) {
-            if (HTTP_ROUTES[i].segment_size == 0) {
-                return &HTTP_ROUTES[i];
+        for (ushort i = 0; i < server->size_of_http_routes; i++) {
+            if (server->http_routes[i].segment_size == 0) {
+                return &(server->http_routes[i]);
             }
         }
         return NULL;
@@ -357,8 +345,8 @@ HTTPRoute *is_route_exists(uchar *requested_route, StringMap *out_params) {
     }
 
     // ✅ Match & extract params in ONE PASS
-    for (ushort i = 0; i < SIZE_OF_HTTP_ROUTES; i++) {
-        HTTPRoute *route = &HTTP_ROUTES[i];
+    for (ushort i = 0; i < server->size_of_http_routes; i++) {
+        HTTPRoute *route = &(server->http_routes[i]);
 
         if (route->segment_size != req_count)
             continue;
@@ -404,13 +392,25 @@ HTTPRoute *is_route_exists(uchar *requested_route, StringMap *out_params) {
 uchar route(HTTPServer *server, uchar *route_str, HTTPCallback *callback) {
     if (!server || !route_str || !callback) return 0;
 
-    if (SIZE_OF_HTTP_ROUTES >= MAX_HTTP_ROUTES) {
+    if (server->size_of_http_routes >= MAX_HTTP_ROUTES) {
         msglog(ERROR, "Can't route for '%s'. This version of geoNS supports %d routes.",
                route_str, MAX_HTTP_ROUTES);
         return 0;
     }
 
-    // Proper copy of the route string (with null terminator)
+    if (!strncmp(route_str, "/", 2)) {
+        server->http_routes[server->size_of_http_routes++] = (HTTPRoute) {
+            .route = &(Route) {
+                .value = "/",
+                .is_parametric = 0,
+                .next = NULL
+            },
+            .callback = callback,
+            .segment_size = 0
+        };
+        return 1;
+    }
+
     ushort route_len = strlen(route_str);
     uchar *route_copy = memalloc(route_len + 1);
     if (!route_copy) {
@@ -480,7 +480,7 @@ uchar route(HTTPServer *server, uchar *route_str, HTTPCallback *callback) {
     }
 
     // Store route definition
-    HTTP_ROUTES[SIZE_OF_HTTP_ROUTES++] = (HTTPRoute) {
+    server->http_routes[server->size_of_http_routes++] = (HTTPRoute) {
         .route = head,
         .callback = callback,
         .segment_size = segment_count
@@ -530,7 +530,7 @@ char *get_mime_type(const char *file_path) {
 }
 
 
-ssize_t http_server_callback(SocketConnection *connection) {
+ssize_t http_server_callback(void *args, ...) {
     // Parsing request:
         // 1. storing headers                               - DONE
         // 2. storing method                                - DONE
@@ -538,6 +538,12 @@ ssize_t http_server_callback(SocketConnection *connection) {
         // 4. storing URI                                   - DONE
         // 5. looking for URI within public folder          - DONE
         // 6. if this is not URI, search for routes
+
+    SocketConnection *connection = (SocketConnection *) args;
+    va_list ap;
+    va_start(ap, args);
+    HTTPServer *http_server = va_arg(ap, HTTPServer *);
+    va_end(ap);
 
     HTTPRequest *http_request = parse_http_request(connection);
     if (http_request == NULL) return -1;
@@ -559,10 +565,10 @@ ssize_t http_server_callback(SocketConnection *connection) {
 
     // Step 5: Looking for URI within public folder
     char file_path[MAX_SYS_PATH_LENGTH];
-    snprintf(file_path, sizeof(file_path), "%s/%s", HTTP_SERVER->public_dir, http_request->uri);
+    snprintf(file_path, sizeof(file_path), "%s/%s", http_server->public_dir, http_request->uri);
 
     StringMap *parameter_map = create_string_map();
-    HTTPRoute *route = is_route_exists(http_request->uri, parameter_map);
+    HTTPRoute *route = is_route_exists(http_server, http_request->uri, parameter_map);
     if (route != NULL) {
         // HERE
         route->callback(http_request, parameter_map);

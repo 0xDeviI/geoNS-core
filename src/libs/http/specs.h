@@ -54,11 +54,6 @@ typedef struct sHTTPResponse {
     size_t body_size;
 } HTTPResponse;
 
-typedef struct sHTTPServer {
-    uchar *public_dir;
-    SocketServer *socket_server;
-} HTTPServer;
-
 typedef void (HTTPCallback)(void *args, ...);
 
 typedef struct sRoute {
@@ -73,6 +68,11 @@ typedef struct sHTTPRoute {
     HTTPCallback *callback;
 } HTTPRoute;
 
-extern HTTPServer *HTTP_SERVER;
+typedef struct sHTTPServer {
+    uchar *public_dir;
+    SocketServer *socket_server;
+    HTTPRoute http_routes[MAX_HTTP_ROUTES];
+    ushort size_of_http_routes;
+} HTTPServer;
 
 #endif // !GEONS_HTTP_SPECS_H

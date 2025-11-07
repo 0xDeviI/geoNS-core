@@ -3,6 +3,7 @@
 
 #include <magic.h>
 #include <string.h>
+#include <stdarg.h>
 #include "specs.h"
 #include "parser/parser.h"
 #include "../config/config.h"
@@ -12,8 +13,6 @@
 #define GEONS_WEBSERVER_INFO (GEONS_WEBSERVER_NAME "/" GEONS_VERSION " (" OS_NAME ")")
 
 extern const HTTPStatusCode HTTP_STATUSES[];
-extern HTTPRoute HTTP_ROUTES[];
-extern ushort SIZE_OF_HTTP_ROUTES;
 
 char *get_reason_phrase(ushort status_code);
 char *get_http_header_value(HTTPRequest *request, uchar *header_name);
@@ -24,9 +23,9 @@ HTTPResponse *create_http_response(ushort status, uchar *reason_phrase, char *bo
 uchar send_http_response(HTTPRequest *request, HTTPResponse *response);
 void kill_http_connection(HTTPRequest *request);
 HTTPServer *create_http_server(uchar *server_addr, ushort port, uchar *public_dir);
-HTTPRoute *is_route_exists(uchar *route, StringMap *out_params);
+HTTPRoute *is_route_exists(HTTPServer *server, uchar *route, StringMap *out_params);
 uchar route(HTTPServer *server, uchar *route, HTTPCallback *callback);
 void kill_http_server(HTTPServer *server);
-ssize_t http_server_callback(SocketConnection *connection);
+ssize_t http_server_callback(void *args, ...);
 
 #endif // !GEONS_HTTP_H

@@ -38,7 +38,7 @@ typedef struct sSocketConnection
     llint buffer_size;
 } SocketConnection;
 
-typedef ssize_t (ServerCallback)(SocketConnection *connection);
+typedef ssize_t (ServerCallback)(void *args, ...);
 
 
 typedef struct sSocketServer
@@ -53,6 +53,7 @@ typedef struct sSocketServer
     thread thread;
     ServerCallback *callback;
     size_t buffer_size_per_client;
+    void *meta;
 } SocketServer;
 
 
@@ -61,13 +62,14 @@ typedef struct sClientData
     SocketConnection **head;
     SocketConnection *current;
     ServerCallback *server_callback;
+    void *meta;
 } ClientData;
 
 
 uchar is_my_ip(const uchar *ip);
 void add_connection(SocketConnection **head, SocketConnection *connection);
 uchar remove_connection(SocketConnection **head, SocketConnection *connection);
-SocketServer *open_server_socket(uchar *server, ushort port);
+SocketServer *open_server_socket(uchar *server, ushort port, void *meta);
 void handle_server_socket(SocketServer *server, ServerCallback *server_callback);
 void kill_socket(int fd);
 void kill_socket_server(SocketServer *server);

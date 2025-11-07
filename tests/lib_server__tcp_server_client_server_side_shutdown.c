@@ -24,7 +24,8 @@ void setUp(void) {
 void tearDown(void) {
 }
 
-ssize_t test_server_callback(SocketConnection *connection) {
+ssize_t test_server_callback(void *args, ...) {
+    SocketConnection *connection = (SocketConnection *) args;
     TEST_ASSERT_EQUAL_STRING(CLIENT_REQUEST, connection->buffer);
     send(connection->fd, SERVER_RESPONSE, strlen(SERVER_RESPONSE), 0);
     return 0;

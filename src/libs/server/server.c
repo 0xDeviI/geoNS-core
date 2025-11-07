@@ -115,7 +115,7 @@ GeoNSServer *create_geons_server() {
     }
 
     // creating node socket server
-    server->node_gateway_server = open_server_socket(CONFIG->geons_config.geons_server_addr, CONFIG->geons_config.node_gateway_port);
+    server->node_gateway_server = open_server_socket(CONFIG->geons_config.geons_server_addr, CONFIG->geons_config.node_gateway_port, NULL);
     if (server->node_gateway_server == NULL) {
         msglog(ERROR, "Creating node server failed on %s:%d", CONFIG->geons_config.geons_server_addr, CONFIG->geons_config.node_gateway_port);
         kill_geons_server(server);

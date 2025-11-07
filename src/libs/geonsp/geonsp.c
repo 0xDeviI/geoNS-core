@@ -198,7 +198,8 @@ void server_proto_response(SocketConnection *connection, uchar is_success, uchar
 }
 
 
-ssize_t node_server_callback(SocketConnection *connection) {
+ssize_t node_server_callback(void *args, ...) {
+    SocketConnection *connection = (SocketConnection *) args;
     if (strlen(connection->buffer) != 0) {
         msglog(DEBUG, 
             "Request[%s:%d -> %s:%d]:\n- %32s%s", 
