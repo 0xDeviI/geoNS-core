@@ -2,6 +2,7 @@
 #define GEONS_HTTP_ROUTER_H 1
 
 #include <stdarg.h>
+#include <curl/curl.h>
 #include "../http.h"
 #include "../../core/strmap.h"
 #include "home.h"
@@ -17,8 +18,14 @@ static inline void test(void *args, ...) {
     va_start(ap, args);
     StringMap *params = va_arg(ap, StringMap *);
     uchar *username = string_map_get(params, "username");
-    printf("username: %s\n", username);
     va_end(ap);
+
+    // CURL *curl = curl_easy_init();
+    // username = curl_easy_unescape(curl, username, 0, NULL);
+    printf("username: %s\n", username);
+    // curl_free(username);
+    // curl_easy_cleanup(curl);
+
     string_map_free(params);
     callback_about(http_request);
 }

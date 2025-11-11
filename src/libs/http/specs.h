@@ -56,14 +56,14 @@ typedef struct sHTTPResponse {
 
 typedef void (HTTPCallback)(void *args, ...);
 
-typedef struct sRoute {
+typedef struct sRouteSegment {
     uchar *value;
-    struct sRoute *next;
+    struct sRouteSegment *next;
     uchar is_parametric : 1;
-} Route;
+} RouteSegment;
 
 typedef struct sHTTPRoute {
-    Route *route;
+    RouteSegment *segment;
     ushort segment_size;
     HTTPCallback *callback;
 } HTTPRoute;

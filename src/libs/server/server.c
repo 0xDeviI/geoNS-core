@@ -125,20 +125,20 @@ GeoNSServer *create_geons_server() {
     server->node_gateway_server->buffer_size_per_client = MAX_GEONSP_BUFFER_SIZE;
     handle_server_socket(server->node_gateway_server, &node_server_callback);
 
-    HTTPServer *http_server = create_http_server(
+    server->http_server = create_http_server(
         CONFIG->geons_config.geons_server_addr, 
         CONFIG->http_config.server_port, 
         "../"
     );
-    if (http_server == NULL) {
+    if (server->http_server == NULL) {
         msglog(ERROR, "Creating HTTP server failed on %s:%d", CONFIG->geons_config.geons_server_addr, CONFIG->http_config.server_port);
         kill_geons_server(server);
         return NULL;
     }
 
     // Setting up HTTP server
-    setup_geons_http_router(http_server);
-    handle_server_socket(http_server->socket_server, &http_server_callback);
+    setup_geons_http_router(server->http_server);
+    handle_server_socket(server->http_server->socket_server, &http_server_callback);
 
 
     // connecting databases

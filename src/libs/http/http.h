@@ -25,6 +25,8 @@ void kill_http_connection(HTTPRequest *request);
 HTTPServer *create_http_server(uchar *server_addr, ushort port, uchar *public_dir);
 HTTPRoute *is_route_exists(HTTPServer *server, uchar *route, StringMap *out_params);
 uchar route(HTTPServer *server, uchar *route, HTTPCallback *callback);
+void free_route(HTTPRoute route);
+RouteSegment *create_route_segment(uchar *segment_value, uchar is_parametric);
 void kill_http_server(HTTPServer *server);
 ssize_t http_server_callback(void *args, ...);
 

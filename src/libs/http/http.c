@@ -312,7 +312,6 @@ HTTPServer *create_http_server(uchar *server_addr, ushort port, uchar *public_di
 HTTPRoute *is_route_exists(HTTPServer *server, uchar *requested_route, StringMap *out_params) {
     if (!requested_route || !out_params) return NULL;
 
-    // ✅ Special case for "/"
     if (strcmp(requested_route, "/") == 0) {
         for (ushort i = 0; i < server->size_of_http_routes; i++) {
             if (server->http_routes[i].segment_size == 0) {
@@ -351,11 +350,11 @@ HTTPRoute *is_route_exists(HTTPServer *server, uchar *requested_route, StringMap
         if (route->segment_size != req_count)
             continue;
 
-        Route *rseg = route->route;
+        RouteSegment *rseg = route->segment;
         uchar matched = 1;
 
         // Reset parameter map for this match attempt
-        // string_map_free(out_params);
+        string_map_free(out_params);
 
         for (ushort idx = 0; idx < req_count; idx++) {
             if (!rseg) { matched = 0; break; }
@@ -389,6 +388,26 @@ HTTPRoute *is_route_exists(HTTPServer *server, uchar *requested_route, StringMap
 }
 
 
+RouteSegment *create_route_segment(uchar *segment_value, uchar is_parametric) {
+    RouteSegment *segment = (RouteSegment *) memalloc(sizeof(RouteSegment));
+    if (segment == NULL) {
+        perror("Memory error");
+        return NULL;
+    }
+    segment->value = (uchar *) memalloc(strlen(segment_value) + 1);
+    if (segment == NULL) {
+        perror("Memory error");
+        return NULL;
+    }
+
+    segment->is_parametric = is_parametric;
+    segment->next = NULL;
+    strcpy(segment->value, segment_value);
+
+    return segment;
+}
+
+
 uchar route(HTTPServer *server, uchar *route_str, HTTPCallback *callback) {
     if (!server || !route_str || !callback) return 0;
 
@@ -399,14 +418,12 @@ uchar route(HTTPServer *server, uchar *route_str, HTTPCallback *callback) {
     }
 
     if (!strncmp(route_str, "/", 2)) {
+        RouteSegment *segment = create_route_segment("/", 0);
+
         server->http_routes[server->size_of_http_routes++] = (HTTPRoute) {
-            .route = &(Route) {
-                .value = "/",
-                .is_parametric = 0,
-                .next = NULL
-            },
+            .segment = segment,
             .callback = callback,
-            .segment_size = 0
+            .segment_size = 1
         };
         return 1;
     }
@@ -423,41 +440,28 @@ uchar route(HTTPServer *server, uchar *route_str, HTTPCallback *callback) {
     char *route_ptr = NULL;
     char *segment_str = strtok_r(route_copy, "/", &route_ptr);
 
-    Route *head = NULL;
-    Route *tail = NULL;
+    RouteSegment *head = NULL;
+    RouteSegment *tail = NULL;
     ushort segment_count = 0;
 
     while (segment_str != NULL) {
-
-        Route *node = memalloc(sizeof(Route));
-        if (!node) {
-            perror("Memory error");
-            free(route_copy);
-            return 0;
-        }
-        node->next = NULL;
 
         ushort seg_len = strlen(segment_str);
         uchar is_parametric = (seg_len >= 2 &&
                                segment_str[0] == '{' &&
                                segment_str[seg_len - 1] == '}');
 
+        RouteSegment *node;
         if (!is_parametric) {
-            // Normal segment → copy string
-            uchar *value = memalloc(seg_len + 1);
-            strcpy(value, segment_str);
-
-            node->value = value;
-            node->is_parametric = 0;
+            node = create_route_segment(segment_str, is_parametric);
         } else {
             // Parametric → remove { }
             ushort name_len = seg_len - 2;
             uchar *param_name = memalloc(name_len + 1);
             strncpy(param_name, segment_str + 1, name_len);
             param_name[name_len] = '\0';
-
-            node->value = param_name;
-            node->is_parametric = 1;
+            node = create_route_segment(param_name, is_parametric);
+            free(param_name);
         }
 
         // Append to linked list
@@ -481,7 +485,7 @@ uchar route(HTTPServer *server, uchar *route_str, HTTPCallback *callback) {
 
     // Store route definition
     server->http_routes[server->size_of_http_routes++] = (HTTPRoute) {
-        .route = head,
+        .segment = head,
         .callback = callback,
         .segment_size = segment_count
     };
@@ -491,8 +495,24 @@ uchar route(HTTPServer *server, uchar *route_str, HTTPCallback *callback) {
 }
 
 
+void free_route(HTTPRoute route) {
+    RouteSegment *current = route.segment;
+    while (current != NULL) {
+        RouteSegment *next = current->next;
+        if (current->value != NULL) {
+            free(current->value);
+        }
+        free(current);
+        current = next;
+    }
+}
+
+
 void kill_http_server(HTTPServer *server) {
     if (server == NULL) return;
+
+    for (ushort i = 0; i < server->size_of_http_routes; i++)
+        free_route(server->http_routes[i]);
 
     kill_socket_server(server->socket_server);
     if (server->public_dir != NULL) free(server->public_dir);
