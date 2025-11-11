@@ -321,13 +321,11 @@ HTTPRoute *is_route_exists(HTTPServer *server, uchar *requested_route, StringMap
         return NULL;
     }
 
-    // Copy URI (strtok_r modifies input)
     ushort req_len = strlen(requested_route);
     uchar *copy_uri = memalloc(req_len + 1);
     if (!copy_uri) return NULL;
     strcpy(copy_uri, requested_route);
 
-    // Tokenize once
     char *ptr = NULL;
     char *seg = strtok_r(copy_uri, "/", &ptr);
 
@@ -343,7 +341,8 @@ HTTPRoute *is_route_exists(HTTPServer *server, uchar *requested_route, StringMap
         seg = strtok_r(NULL, "/", &ptr);
     }
 
-    // ✅ Match & extract params in ONE PASS
+    HTTPRoute *found_route = NULL;
+
     for (ushort i = 0; i < server->size_of_http_routes; i++) {
         HTTPRoute *route = &(server->http_routes[i]);
 
@@ -353,23 +352,16 @@ HTTPRoute *is_route_exists(HTTPServer *server, uchar *requested_route, StringMap
         RouteSegment *rseg = route->segment;
         uchar matched = 1;
 
-        // Reset parameter map for this match attempt
-        string_map_free(out_params);
-
         for (ushort idx = 0; idx < req_count; idx++) {
             if (!rseg) { matched = 0; break; }
 
             if (!rseg->is_parametric) {
-                // Must match exactly
                 if (strcmp(rseg->value, req_segments[idx]) != 0) {
                     matched = 0;
                     break;
                 }
             } else {
                 if (out_params != NULL) {
-                    // ✅ Parametric: extract value
-                    // rseg->value = param name
-                    // req_segments[idx] = actual value
                     string_map_put(out_params, rseg->value, req_segments[idx]);
                 }
             }
@@ -378,13 +370,18 @@ HTTPRoute *is_route_exists(HTTPServer *server, uchar *requested_route, StringMap
         }
 
         if (matched) {
-            free(copy_uri);
-            return route;
+            found_route = route;
+            break;
         }
     }
 
+    // Clean up allocated segments
+    for (ushort i = 0; i < req_count; i++) {
+        free(req_segments[i]);
+    }
     free(copy_uri);
-    return NULL;
+    
+    return found_route;
 }
 
 
@@ -423,7 +420,7 @@ uchar route(HTTPServer *server, uchar *route_str, HTTPCallback *callback) {
         server->http_routes[server->size_of_http_routes++] = (HTTPRoute) {
             .segment = segment,
             .callback = callback,
-            .segment_size = 1
+            .segment_size = 0
         };
         return 1;
     }
@@ -551,14 +548,6 @@ char *get_mime_type(const char *file_path) {
 
 
 ssize_t http_server_callback(void *args, ...) {
-    // Parsing request:
-        // 1. storing headers                               - DONE
-        // 2. storing method                                - DONE
-        // 3. storing body                                  - DONE
-        // 4. storing URI                                   - DONE
-        // 5. looking for URI within public folder          - DONE
-        // 6. if this is not URI, search for routes
-
     SocketConnection *connection = (SocketConnection *) args;
     va_list ap;
     va_start(ap, args);
@@ -588,9 +577,9 @@ ssize_t http_server_callback(void *args, ...) {
     snprintf(file_path, sizeof(file_path), "%s/%s", http_server->public_dir, http_request->uri);
 
     StringMap *parameter_map = create_string_map();
+    // TODO: here; check why it fails on some route checks
     HTTPRoute *route = is_route_exists(http_server, http_request->uri, parameter_map);
     if (route != NULL) {
-        // HERE
         route->callback(http_request, parameter_map);
         return 0;
     }

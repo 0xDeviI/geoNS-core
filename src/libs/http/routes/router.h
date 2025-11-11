@@ -26,7 +26,6 @@ static inline void test(void *args, ...) {
     // curl_free(username);
     // curl_easy_cleanup(curl);
 
-    string_map_free(params);
     callback_about(http_request);
 }
 
