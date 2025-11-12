@@ -61,24 +61,25 @@ uchar remove_connection(SocketConnection **head, SocketConnection *connection) {
         kill_socket(current->fd);
     }
 
+    // Always free the buffer if it exists
+    if (current->buffer != NULL) {
+        free(current->buffer);
+        current->buffer = NULL;
+    }
+
+    // Rest of the linked list removal logic...
     if (current->next != NULL) {
         if (previous == NULL)
             *head = current->next;
         else
             previous->next = current->next;
-        
-        free(current->buffer);
         free(current);
-        current = NULL;
-    }
-    else {
+    } else {
         if (previous == NULL) {
             free(*head);
             *head = NULL;
-        }
-        else {
+        } else {
             free(current);
-            current = NULL;
             previous->next = NULL;
         }
     }
@@ -136,12 +137,15 @@ void *server_socket_thread(void *arg) {
 
 
         if (pthread_create(&thread_id, NULL, handle_client, (void *) client_data) != 0) {
+            free(client_data);
             msglog(ERROR, "%s:%d failed on creating thread to handle client requests", server->server_addr, server->port);
             remove_connection(&server->connections, connection);
         } else {
             pthread_detach(thread_id);
         }
     }
+
+    kill_socket_server(server);
 
     return NULL;
 }
@@ -257,6 +261,7 @@ void *handle_client(void *arg) {
     connection->buffer = (char *) memalloc(connection->buffer_size_limit);
     if (connection->buffer == NULL) {
         perror("Memory error");
+        remove_connection(head, connection);
         return NULL;
     }
     char callback_result;

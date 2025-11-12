@@ -17,12 +17,14 @@ static inline void test(void *args, ...) {
     va_list ap;
     va_start(ap, args);
     StringMap *params = va_arg(ap, StringMap *);
-    uchar *username = string_map_get(params, "username");
     va_end(ap);
+
+    printf("list is:\n");
+    string_map_print(params);
 
     // CURL *curl = curl_easy_init();
     // username = curl_easy_unescape(curl, username, 0, NULL);
-    printf("username: %s\n", username);
+    // printf("username: %s\n", username);
     // curl_free(username);
     // curl_easy_cleanup(curl);
 

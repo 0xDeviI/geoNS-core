@@ -1,14 +1,15 @@
 #include "strmap.h"
 
 StringMap* create_string_map() {
-    StringMap *map = malloc(sizeof(StringMap));
+    StringMap *map = (StringMap *) memalloc(sizeof(StringMap));
     map->head = NULL;
     map->size = 0;
     return map;
 }
 
-void string_map_put(StringMap *map, const char *key, const char *value) {
-    // Check if key already exists
+void string_map_put(StringMap *map, uchar *key, uchar *value) {
+    if (!map || !key || !value) return;
+
     MapNode *current = map->head;
     while (current != NULL) {
         if (strcmp(current->key, key) == 0) {
@@ -20,7 +21,7 @@ void string_map_put(StringMap *map, const char *key, const char *value) {
     }
     
     // Create new node
-    MapNode *new_node = malloc(sizeof(MapNode));
+    MapNode *new_node = (MapNode *) memalloc(sizeof(MapNode));
     new_node->key = strdup(key);
     new_node->value = strdup(value);
     new_node->next = map->head;
@@ -28,22 +29,28 @@ void string_map_put(StringMap *map, const char *key, const char *value) {
     map->size++;
 }
 
-char* string_map_get(StringMap *map, const char *key) {
+uchar* string_map_get(StringMap *map, uchar *key) {
     MapNode *current = map->head;
     while (current != NULL) {
         if (strcmp(current->key, key) == 0) {
-            return current->value;
+            uchar *copied_value = strdup(current->value);
+            return copied_value;
         }
         current = current->next;
     }
     return NULL;
 }
 
-int string_map_contains(StringMap *map, const char *key) {
-    return string_map_get(map, key) != NULL;
+uchar string_map_contains(StringMap *map, uchar *key) {
+    char *value = string_map_get(map, key);
+    if (value != NULL) {
+        free(value);
+        return 1;
+    }
+    return 0;
 }
 
-void string_map_remove(StringMap *map, const char *key) {
+void string_map_remove(StringMap *map, uchar *key) {
     MapNode *current = map->head;
     MapNode *prev = NULL;
     

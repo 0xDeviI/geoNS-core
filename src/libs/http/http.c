@@ -577,10 +577,10 @@ ssize_t http_server_callback(void *args, ...) {
     snprintf(file_path, sizeof(file_path), "%s/%s", http_server->public_dir, http_request->uri);
 
     StringMap *parameter_map = create_string_map();
-    // TODO: here; check why it fails on some route checks
     HTTPRoute *route = is_route_exists(http_server, http_request->uri, parameter_map);
     if (route != NULL) {
         route->callback(http_request, parameter_map);
+        string_map_free(parameter_map);
         return 0;
     }
     else {
