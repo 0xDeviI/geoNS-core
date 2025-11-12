@@ -168,32 +168,50 @@ void free_http_request_headers(HTTPRequest *request) {
 }
 
 
-uchar set_http_response_header(char **headers, uchar *header_name, uchar *header_value) {
-    // TODO: make this a variadic function to accept formatting
-    if (headers == NULL || header_name == NULL || header_value == NULL)
+uchar set_http_response_header(char **headers, uchar *header_name, uchar *format, ...) {
+    if (headers == NULL || header_name == NULL || format == NULL)
         return 0;
     
+    va_list args;
+    
+    va_start(args, format);
+    size_t value_size = vsnprintf(NULL, 0, format, args);
+    va_end(args);
+    
+    if (value_size < 0) return 0;
+    
+    uchar *header_value = (uchar *) memalloc(value_size + 1);
+    if (header_value == NULL)
+        return 0;
+    
+    va_start(args, format);
+    vsnprintf((char *)header_value, value_size + 1, format, args);
+    va_end(args);
+    
     size_t required_size = snprintf(NULL, 0, "%s: %s\r\n", header_name, header_value);
-
+    
+    uchar result = 0;
+    
     if (*headers == NULL) {
-        *headers = (char *) malloc(required_size + 1);
-        if (*headers == NULL)
-            return 0;
-        snprintf(*headers, required_size + 1, "%s: %s\r\n", header_name, header_value);
+        *headers = (char *) memalloc(required_size + 1);
+        if (*headers != NULL) {
+            snprintf(*headers, required_size + 1, "%s: %s\r\n", header_name, header_value);
+            result = 1;
+        }
     }
     else {
         size_t previous_header_size = strlen(*headers);
-        char *new_headers = (char *) realloc(*headers, previous_header_size + required_size + 1);
-        if (new_headers == NULL) {
-            return 0; // Don't free *headers here; keep the original buffer.
+        char *new_headers = (char *)realloc(*headers, previous_header_size + required_size + 1);
+        if (new_headers != NULL) {
+            *headers = new_headers;
+            snprintf(*headers + previous_header_size, required_size + 1, "%s: %s\r\n", header_name, header_value);
+            result = 1;
         }
-        *headers = new_headers;
-        snprintf(*headers + previous_header_size, required_size + 1, "%s: %s\r\n", header_name, header_value);
     }
     
-    return 1;
+    free(header_value);
+    return result;
 }
-
 
 
 void free_http_response(HTTPResponse *response) {
@@ -611,10 +629,8 @@ ssize_t http_server_callback(void *args, ...) {
             }
 
             char *headers = NULL;
-            uchar size_str[32];
-            snprintf(size_str, sizeof(size_str), "%zu", file_size);
             set_http_response_header(&headers, "Content-Type", mime_type);
-            set_http_response_header(&headers, "Content-Length", size_str);
+            set_http_response_header(&headers, "Content-Length", "%zu", file_size);
             set_http_response_header(&headers, "Connection", "Close");
             send_http_status(http_request, 200, file_content, file_size, &headers);
             kill_http_connection(http_request);
@@ -640,7 +656,7 @@ ssize_t http_server_callback(void *args, ...) {
         
                     char *headers = NULL;
                     set_http_response_header(&headers, "Content-Type", "text/html");
-                    set_http_response_header(&headers, "Content-Length", (uchar *)&body_size);
+                    set_http_response_header(&headers, "Content-Length", "%d", body_size);
                     set_http_response_header(&headers, "Connection", "Close");
                     send_http_status(http_request, 200, body, body_size, &headers);
                     kill_http_connection(http_request);

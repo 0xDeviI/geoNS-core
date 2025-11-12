@@ -17,7 +17,7 @@ extern const HTTPStatusCode HTTP_STATUSES[];
 char *get_reason_phrase(ushort status_code);
 char *get_http_header_value(HTTPRequest *request, uchar *header_name);
 void free_http_request_headers(HTTPRequest *request);
-uchar set_http_response_header(char **headers, uchar *header_name, uchar *header_value);
+uchar set_http_response_header(char **headers, uchar *header_name, uchar *format, ...);
 void free_http_response(HTTPResponse *response);
 HTTPResponse *create_http_response(ushort status, uchar *reason_phrase, char *body, size_t body_size, char *headers);
 uchar send_http_response(HTTPRequest *request, HTTPResponse *response);
