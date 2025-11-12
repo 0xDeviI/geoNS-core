@@ -59,6 +59,8 @@ playground/
 test.c
 obj/
 Makefile-TEST
+core.geoNS-core.*
+diff.txt
 
 # Ignore everything in the tests directory
 tests/*

@@ -97,13 +97,12 @@ char *get_http_header_value(HTTPRequest *request, uchar *header_name) {
         return NULL;
     }
 
-    char *header_copy = (char *) memalloc(request->headers_size);
+    char *header_copy = strdup(request->headers);
     if (header_copy == NULL) {
         perror("Memory error");
         regfree(&regex);
         return NULL;
     }
-    strncpy(header_copy, request->headers, request->headers_size);
 
     char *header_token_ptr;
     char *header_field_name = NULL;
@@ -320,29 +319,31 @@ HTTPServer *create_http_server(uchar *server_addr, ushort port, uchar *public_di
 
     socket_server->buffer_size_per_client = BASE_HTTP_REQUEST_SIZE;
     http_server->socket_server = socket_server;
-    strncpy(http_server->public_dir, public_dir_path, public_dir_path_size);
-    http_server->public_dir[public_dir_path_size] = '\0';
+    http_server->public_dir = strdup(public_dir_path);
 
     return http_server;
 }
 
 
-HTTPRoute *is_route_exists(HTTPServer *server, uchar *requested_route, StringMap *out_params) {
-    if (!requested_route || !out_params) return NULL;
+HTTPRoute *is_route_exists(HTTPServer *server, HTTPRequest *request, StringMap *out_params) {
+    if (!request || !request->uri || !out_params) return NULL;
 
-    if (strcmp(requested_route, "/") == 0) {
+    uchar *root = "/";
+    if (!strncmp(request->uri, root, strlen(root))) {
         for (ushort i = 0; i < server->size_of_http_routes; i++) {
-            if (server->http_routes[i].segment_size == 0) {
+            HTTPRoute route = server->http_routes[i];
+            if (
+                route.segment_size == 0 
+                && !strncmp(route.segment->value, root, strlen(root))
+            ) {
                 return &(server->http_routes[i]);
             }
         }
         return NULL;
     }
 
-    ushort req_len = strlen(requested_route);
-    uchar *copy_uri = memalloc(req_len + 1);
+    uchar *copy_uri = strdup(request->uri);
     if (!copy_uri) return NULL;
-    strcpy(copy_uri, requested_route);
 
     char *ptr = NULL;
     char *seg = strtok_r(copy_uri, "/", &ptr);
@@ -351,9 +352,7 @@ HTTPRoute *is_route_exists(HTTPServer *server, uchar *requested_route, StringMap
     ushort req_count = 0;
 
     while (seg != NULL) {
-        ushort len = strlen(seg);
-        uchar *cpy = memalloc(len + 1);
-        strcpy(cpy, seg);
+        uchar *cpy = strdup(seg);
 
         req_segments[req_count++] = cpy;
         seg = strtok_r(NULL, "/", &ptr);
@@ -393,7 +392,6 @@ HTTPRoute *is_route_exists(HTTPServer *server, uchar *requested_route, StringMap
         }
     }
 
-    // Clean up allocated segments
     for (ushort i = 0; i < req_count; i++) {
         free(req_segments[i]);
     }
@@ -409,7 +407,7 @@ RouteSegment *create_route_segment(uchar *segment_value, uchar is_parametric) {
         perror("Memory error");
         return NULL;
     }
-    segment->value = (uchar *) memalloc(strlen(segment_value) + 1);
+    segment->value = strdup(segment_value);
     if (segment == NULL) {
         perror("Memory error");
         return NULL;
@@ -417,14 +415,13 @@ RouteSegment *create_route_segment(uchar *segment_value, uchar is_parametric) {
 
     segment->is_parametric = is_parametric;
     segment->next = NULL;
-    strcpy(segment->value, segment_value);
 
     return segment;
 }
 
 
-uchar route(HTTPServer *server, uchar *route_str, HTTPCallback *callback) {
-    if (!server || !route_str || !callback) return 0;
+uchar set_http_route(HTTPServer *server, uchar *method, uchar *route_str, HTTPCallback *callback) {
+    if (!server || !method || !route_str || !callback) return 0;
 
     if (server->size_of_http_routes >= MAX_HTTP_ROUTES) {
         msglog(ERROR, "Can't route for '%s'. This version of geoNS supports %d routes.",
@@ -438,18 +435,18 @@ uchar route(HTTPServer *server, uchar *route_str, HTTPCallback *callback) {
         server->http_routes[server->size_of_http_routes++] = (HTTPRoute) {
             .segment = segment,
             .callback = callback,
-            .segment_size = 0
+            .segment_size = 0,
+            .method = strdup(method)
         };
         return 1;
     }
 
     ushort route_len = strlen(route_str);
-    uchar *route_copy = memalloc(route_len + 1);
+    uchar *route_copy = strdup(route_str);
     if (!route_copy) {
         perror("Memory error");
         return 0;
     }
-    strcpy(route_copy, route_str);
 
     // Tokenization
     char *route_ptr = NULL;
@@ -472,9 +469,7 @@ uchar route(HTTPServer *server, uchar *route_str, HTTPCallback *callback) {
         } else {
             // Parametric → remove { }
             ushort name_len = seg_len - 2;
-            uchar *param_name = memalloc(name_len + 1);
-            strncpy(param_name, segment_str + 1, name_len);
-            param_name[name_len] = '\0';
+            uchar *param_name = strdup(segment_str);
             node = create_route_segment(param_name, is_parametric);
             free(param_name);
         }
@@ -502,7 +497,8 @@ uchar route(HTTPServer *server, uchar *route_str, HTTPCallback *callback) {
     server->http_routes[server->size_of_http_routes++] = (HTTPRoute) {
         .segment = head,
         .callback = callback,
-        .segment_size = segment_count
+        .segment_size = segment_count,
+        .method = strdup(method)
     };
 
     free(route_copy);
@@ -510,8 +506,8 @@ uchar route(HTTPServer *server, uchar *route_str, HTTPCallback *callback) {
 }
 
 
-void free_route(HTTPRoute route) {
-    RouteSegment *current = route.segment;
+void free_route(HTTPRoute *route) {
+    RouteSegment *current = route->segment;
     while (current != NULL) {
         RouteSegment *next = current->next;
         if (current->value != NULL) {
@@ -520,6 +516,10 @@ void free_route(HTTPRoute route) {
         free(current);
         current = next;
     }
+
+    if (route->method != NULL) {
+        free(route->method);
+    }
 }
 
 
@@ -527,7 +527,7 @@ void kill_http_server(HTTPServer *server) {
     if (server == NULL) return;
 
     for (ushort i = 0; i < server->size_of_http_routes; i++)
-        free_route(server->http_routes[i]);
+        free_route(&(server->http_routes[i]));
 
     kill_socket_server(server->socket_server);
     if (server->public_dir != NULL) free(server->public_dir);
@@ -565,6 +565,11 @@ char *get_mime_type(const char *file_path) {
 }
 
 
+uchar is_request_method_allowed(HTTPRoute *route, HTTPRequest *request) {
+    return !strncmp(request->method.name, route->method, strlen(route->method));
+}
+
+
 ssize_t http_server_callback(void *args, ...) {
     SocketConnection *connection = (SocketConnection *) args;
     va_list ap;
@@ -595,11 +600,20 @@ ssize_t http_server_callback(void *args, ...) {
     snprintf(file_path, sizeof(file_path), "%s/%s", http_server->public_dir, http_request->uri);
 
     StringMap *parameter_map = create_string_map();
-    HTTPRoute *route = is_route_exists(http_server, http_request->uri, parameter_map);
+    HTTPRoute *route = is_route_exists(http_server, http_request, parameter_map);
     if (route != NULL) {
-        route->callback(http_request, parameter_map);
+        char result = 0;
+        if (is_request_method_allowed(route, http_request)) {
+            route->callback(http_request, parameter_map);
+        }
+        else {
+            char *body = "405\nMethod not allowed";
+            send_http_status(http_request, 405, body, strlen(body), NULL);
+            kill_http_connection(http_request);
+            result = -1;
+        }
         string_map_free(parameter_map);
-        return 0;
+        return result;
     }
     else {
         if (is_file_exist(file_path)) {

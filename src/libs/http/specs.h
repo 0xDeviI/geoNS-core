@@ -66,6 +66,7 @@ typedef struct sHTTPRoute {
     RouteSegment *segment;
     ushort segment_size;
     HTTPCallback *callback;
+    uchar *method;
 } HTTPRoute;
 
 typedef struct sHTTPServer {

@@ -8,6 +8,16 @@
 #include "home.h"
 #include "about.h"
 
+
+void GET(HTTPServer *server, uchar *route, HTTPCallback callback);
+void POST(HTTPServer *server, uchar *route, HTTPCallback callback);
+void PUT(HTTPServer *server, uchar *route, HTTPCallback callback);
+void PATCH(HTTPServer *server, uchar *route, HTTPCallback callback);
+void DELETE(HTTPServer *server, uchar *route, HTTPCallback callback);
+void HEAD(HTTPServer *server, uchar *route, HTTPCallback callback);
+void OPTIONS(HTTPServer *server, uchar *route, HTTPCallback callback);
+
+
 static inline void test(void *args, ...) {
     if (args == NULL) {
         return;
