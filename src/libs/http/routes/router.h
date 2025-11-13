@@ -9,13 +9,14 @@
 #include "about.h"
 
 
-void GET(HTTPServer *server, uchar *route, HTTPCallback callback);
-void POST(HTTPServer *server, uchar *route, HTTPCallback callback);
-void PUT(HTTPServer *server, uchar *route, HTTPCallback callback);
-void PATCH(HTTPServer *server, uchar *route, HTTPCallback callback);
-void DELETE(HTTPServer *server, uchar *route, HTTPCallback callback);
-void HEAD(HTTPServer *server, uchar *route, HTTPCallback callback);
-void OPTIONS(HTTPServer *server, uchar *route, HTTPCallback callback);
+void get(HTTPServer *server, uchar *route, HTTPCallback callback);
+void post(HTTPServer *server, uchar *route, HTTPCallback callback);
+void put(HTTPServer *server, uchar *route, HTTPCallback callback);
+void patch(HTTPServer *server, uchar *route, HTTPCallback callback);
+void delete(HTTPServer *server, uchar *route, HTTPCallback callback);
+void head(HTTPServer *server, uchar *route, HTTPCallback callback);
+void options(HTTPServer *server, uchar *route, HTTPCallback callback);
+void route(HTTPServer *server, uchar *method, uchar *route, HTTPCallback callback);
 
 
 static inline void test(void *args, ...) {
@@ -29,14 +30,15 @@ static inline void test(void *args, ...) {
     StringMap *params = va_arg(ap, StringMap *);
     va_end(ap);
 
-    printf("list is:\n");
-    string_map_print(params);
+    uchar *username_str = string_map_get(params, "username");
 
     // CURL *curl = curl_easy_init();
-    // username = curl_easy_unescape(curl, username, 0, NULL);
-    // printf("username: %s\n", username);
+    // char *username = curl_easy_unescape(curl, username_str, 0, NULL);
+    printf("username: %s\n", username_str);
     // curl_free(username);
     // curl_easy_cleanup(curl);
+
+    free(username_str);
 
     callback_about(http_request);
 }

@@ -138,8 +138,10 @@ char *get_http_header_value(HTTPRequest *request, uchar *header_name) {
                 free(header_copy);
                 return header_field_value;
             }
-            else
+            else {
+                free(header_field_name);
                 header_token = strtok_r(NULL, "\n", &header_token_ptr);
+            }
         }
         else
             break;
@@ -549,7 +551,7 @@ char *get_mime_type(const char *file_path) {
 
 
 uchar is_request_method_allowed(HTTPRoute *route, HTTPRequest *request) {
-    return !strncmp(request->method.name, route->method, strlen(route->method));
+    return strstr(route->method, request->method.name) != NULL;
 }
 
 
