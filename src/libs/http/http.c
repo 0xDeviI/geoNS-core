@@ -601,6 +601,8 @@ ssize_t http_server_callback(void *args, ...) {
         return result;
     }
     else {
+        if (parameter_map != NULL)
+            string_map_free(parameter_map);
         if (is_file_exist(file_path)) {
             FILE *file = fopen(file_path, "rb");
             if (file == NULL) {

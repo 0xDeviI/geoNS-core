@@ -128,7 +128,7 @@ GeoNSServer *create_geons_server() {
     server->http_server = create_http_server(
         CONFIG->geons_config.geons_server_addr, 
         CONFIG->http_config.server_port, 
-        "../"
+        "../bin/web/"
     );
     if (server->http_server == NULL) {
         msglog(ERROR, "Creating HTTP server failed on %s:%d", CONFIG->geons_config.geons_server_addr, CONFIG->http_config.server_port);

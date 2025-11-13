@@ -31,7 +31,11 @@ SRCS := $(filter-out $(EXCLUDED_LIBS), $(SRCS))
 OBJS = $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(SRCS))
 
 # Default target
-all: $(TARGET)
+all: sync_web $(TARGET)
+
+sync_web:
+	mkdir -p $(BIN_DIR)/web
+	cp -r $(LIB_DIR)/http/web $(BIN_DIR)/
 
 # Link the object files to create the executable
 $(TARGET): $(OBJS)
