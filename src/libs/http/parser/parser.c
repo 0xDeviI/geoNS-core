@@ -95,13 +95,12 @@ HTTPRequest *parse_http_request(SocketConnection *connection) {
         }
     }
 
-    http_request->headers = (char *) memalloc(http_request->headers_size);
+    http_request->headers = strndup(connection->buffer + http_request->request_line_offset + 1, http_request->headers_size);
     if (http_request->headers == NULL) {
         perror("Memory error");
         free(http_request);
         return NULL;
     }
-    strncpy(http_request->headers, connection->buffer + http_request->request_line_offset + 1, http_request->headers_size);
 
     char *token = strtok_r(connection->buffer, "\n", &request_save_ptr);
     while (token != NULL) {

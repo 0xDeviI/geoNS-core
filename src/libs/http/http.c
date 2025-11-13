@@ -113,27 +113,19 @@ char *get_http_header_value(HTTPRequest *request, uchar *header_name) {
             int name_start = matches[1].rm_so;
             int name_end = matches[1].rm_eo;
             size_t size_of_header_name = name_end - name_start;
-            if (header_field_name == NULL)
-                header_field_name = (char *) memalloc(size_of_header_name);
-            else
-                header_field_name = (char *) realloc(header_field_name, size_of_header_name);
-
+            header_field_name = strndup(header_token + name_start, name_end - name_start);
             if (header_field_name == NULL) {
                 regfree(&regex);
                 free(header_copy);
                 return NULL;
             }
 
-            memset(header_field_name, '\0', size_of_header_name);
-            strncpy(header_field_name, header_token + name_start, name_end - name_start);
-            header_field_name[name_end - name_start] = '\0';
-
             if (!strncmp(header_name, header_field_name, sizeof(header_field_name))) {
                 // Extract header value
                 int value_start = matches[2].rm_so;
                 int value_end = matches[2].rm_eo;
                 size_t size_of_header_value = value_end - value_start;
-                header_field_value = (char *) memalloc(size_of_header_value);
+                header_field_value = strndup(header_token + value_start, value_end - value_start);
                 if (header_field_value == NULL) {
                     free(header_field_name);
                     regfree(&regex);
@@ -141,8 +133,6 @@ char *get_http_header_value(HTTPRequest *request, uchar *header_name) {
                     return NULL;
                 }
                 
-                strncpy(header_field_value, header_token + value_start, value_end - value_start);
-                header_field_value[value_end - value_start] = '\0';
                 free(header_field_name);
                 regfree(&regex);
                 free(header_copy);
@@ -303,8 +293,7 @@ HTTPServer *create_http_server(uchar *server_addr, ushort port, uchar *public_di
         return NULL;
     }
 
-    public_dir_path_size = strlen(public_dir_path);
-    http_server->public_dir = (uchar *) memalloc(public_dir_path_size + 1);
+    http_server->public_dir = strdup(public_dir_path);
     if (http_server->public_dir == NULL) {
         perror("Memory error");
         free(http_server);
@@ -319,7 +308,6 @@ HTTPServer *create_http_server(uchar *server_addr, ushort port, uchar *public_di
 
     socket_server->buffer_size_per_client = BASE_HTTP_REQUEST_SIZE;
     http_server->socket_server = socket_server;
-    http_server->public_dir = strdup(public_dir_path);
 
     return http_server;
 }
@@ -329,7 +317,7 @@ HTTPRoute *is_route_exists(HTTPServer *server, HTTPRequest *request, StringMap *
     if (!request || !request->uri || !out_params) return NULL;
 
     uchar *root = "/";
-    if (!strncmp(request->uri, root, strlen(root))) {
+    if (strlen(root) == strlen(request->uri) && !strncmp(request->uri, root, strlen(root))) {
         for (ushort i = 0; i < server->size_of_http_routes; i++) {
             HTTPRoute route = server->http_routes[i];
             if (
@@ -448,7 +436,6 @@ uchar set_http_route(HTTPServer *server, uchar *method, uchar *route_str, HTTPCa
         return 0;
     }
 
-    // Tokenization
     char *route_ptr = NULL;
     char *segment_str = strtok_r(route_copy, "/", &route_ptr);
 
@@ -467,14 +454,12 @@ uchar set_http_route(HTTPServer *server, uchar *method, uchar *route_str, HTTPCa
         if (!is_parametric) {
             node = create_route_segment(segment_str, is_parametric);
         } else {
-            // Parametric → remove { }
             ushort name_len = seg_len - 2;
-            uchar *param_name = strdup(segment_str);
+            uchar *param_name = strndup(segment_str + 1, name_len);
             node = create_route_segment(param_name, is_parametric);
             free(param_name);
         }
 
-        // Append to linked list
         if (!head) {
             head = tail = node;
         } else {
@@ -487,13 +472,11 @@ uchar set_http_route(HTTPServer *server, uchar *method, uchar *route_str, HTTPCa
         segment_str = strtok_r(NULL, "/", &route_ptr);
     }
 
-    // No segments → invalid route
     if (segment_count == 0) {
         free(route_copy);
         return 0;
     }
 
-    // Store route definition
     server->http_routes[server->size_of_http_routes++] = (HTTPRoute) {
         .segment = head,
         .callback = callback,

@@ -64,6 +64,9 @@ int main(int argc, const char *argv[]) {
             if (serve_geons(server) == 0)
                 kill_geons_server(server);
         }
+        else {
+            printf("There was an error running GeoNSServer. Check logs for more information.\nExitting now...\n");
+        }
     }
     else {
         // TODO:
