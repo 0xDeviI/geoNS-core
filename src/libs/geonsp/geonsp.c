@@ -1,5 +1,6 @@
 #include "geonsp.h"
 #include "../logger/logger.h"
+#include <stdio.h>
 
 
 uchar handle_node_info_exchange(Database *db, Node *source_node, Node *destination_node, uchar remove_inactive_nodes) {
@@ -17,7 +18,6 @@ uchar handle_node_info_exchange(Database *db, Node *source_node, Node *destinati
         if (server != NULL) {
             uchar buffer[MAX_GEONSP_BUFFER_SIZE];
             JSON_Value *request = construct_add_node_request(
-                source_node->server_addr,
                 source_node->node_gateway
             );
             uchar *request_payload = json_serialize_to_string(request);
@@ -84,10 +84,9 @@ JSON_Value *construct_base_geonsp_message(uchar *geonsp_message) {
     return json_value;
 }
 
-JSON_Value *construct_add_node_request(uchar *server_addr, ushort node_gateway_port) {
+JSON_Value *construct_add_node_request(ushort node_gateway_port) {
     JSON_Value *json_value = construct_base_geonsp_message(GEONSP_MSG_ADD_NODE);
     JSON_Object *json_object = json_value_get_object(json_value);
-    json_object_dotset_string(json_object, "data.server_addr", server_addr);
     json_object_dotset_number(json_object, "data.node_gateway_port", node_gateway_port);
     return json_value;
 }
@@ -256,11 +255,10 @@ ssize_t node_server_callback(void *args, ...) {
                     server_proto_response(connection, 0, "Failed fetching nodes from database");   
                 }
                 else {
-                    uchar *server_addr = (uchar *) json_object_dotget_string(request_json, "data.server_addr");
                     ushort node_gateway_port = (ushort) json_object_dotget_number(request_json, "data.node_gateway_port");
 
                     db_connect(local_db);
-                    uchar insert_node = insert_new_node(local_db, server_addr, node_gateway_port);
+                    uchar insert_node = insert_new_node(local_db, connection->peer_info.client_addr, node_gateway_port);
                     db_disconnect(local_db);
 
                     if (!insert_node)

@@ -1,0 +1,41 @@
+services:
+  geons-n1:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: geons-n1
+    networks:
+      geons-network:
+        ipv4_address: 172.20.0.10
+    command: ["./geoNS-core", "-sd"]
+    restart: unless-stopped
+
+  geons-n2:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: geons-n2
+    networks:
+      geons-network:
+        ipv4_address: 172.20.0.11
+    command: ["./geoNS-core", "-sd"]
+    restart: unless-stopped
+
+  geons-n3:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: geons-n3
+    networks:
+      geons-network:
+        ipv4_address: 172.20.0.12
+    command: ["./geoNS-core", "-sd"]
+    restart: unless-stopped
+
+networks:
+  geons-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/24
+          gateway: 172.20.0.1

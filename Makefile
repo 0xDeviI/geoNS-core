@@ -40,7 +40,7 @@ sync_web:
 # Link the object files to create the executable
 $(TARGET): $(OBJS)
 	@mkdir -p $(BIN_DIR)
-	$(CC) $(LFLAGS) $(LDFLAGS) -o $@ $^
+	$(CC) $(LFLAGS) -o $@ $^ $(LDFLAGS)
 
 # Compile each source file into an object file
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c

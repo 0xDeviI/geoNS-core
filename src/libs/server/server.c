@@ -12,6 +12,30 @@ Node INIT_NODES[] = {
         .server_addr=DEFAULT_GEONS_SERVER_ADDR, 
         .node_gateway=DEFAULT_NODE_GATEWAY_PORT, 
         .status="active"
+    },
+    {
+        .id=1,
+        .server_addr="172.17.0.1",
+        .node_gateway=DEFAULT_NODE_GATEWAY_PORT,
+        .status="active"
+    },
+    {
+        .id=1,
+        .server_addr="172.20.0.10",
+        .node_gateway=DEFAULT_NODE_GATEWAY_PORT,
+        .status="active"
+    },
+    {
+        .id=2,
+        .server_addr="172.20.0.11",
+        .node_gateway=DEFAULT_NODE_GATEWAY_PORT,
+        .status="active"
+    },
+    {
+        .id=3,
+        .server_addr="172.20.0.12",
+        .node_gateway=DEFAULT_NODE_GATEWAY_PORT,
+        .status="active"
     }
 };
 
@@ -128,17 +152,16 @@ GeoNSServer *create_geons_server() {
     server->http_server = create_http_server(
         CONFIG->geons_config.geons_server_addr, 
         CONFIG->http_config.server_port, 
-        "../bin/web/"
+        "/app/www"
     );
-    if (server->http_server == NULL) {
-        msglog(ERROR, "Creating HTTP server failed on %s:%d", CONFIG->geons_config.geons_server_addr, CONFIG->http_config.server_port);
-        kill_geons_server(server);
-        return NULL;
+    if (server->http_server != NULL) {
+        // Setting up HTTP server
+        setup_geons_http_router(server->http_server);
+        handle_server_socket(server->http_server->socket_server, &http_server_callback);
+        // msglog(ERROR, "Creating HTTP server failed on %s:%d", CONFIG->geons_config.geons_server_addr, CONFIG->http_config.server_port);
+        // kill_geons_server(server);
+        // return NULL;
     }
-
-    // Setting up HTTP server
-    setup_geons_http_router(server->http_server);
-    handle_server_socket(server->http_server->socket_server, &http_server_callback);
 
 
     // connecting databases

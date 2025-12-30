@@ -1,5 +1,6 @@
 #include "http.h"
 #include "../logger/logger.h"
+#include <string.h>
 
 const HTTPStatusCode HTTP_STATUSES[] = {
     // 1xx Informational
@@ -226,7 +227,7 @@ HTTPResponse *create_http_response(ushort status, uchar *reason_phrase, char *bo
     return response;
 }
 
-
+// TEMP: CHECK INIT NODES CONNECTION ISSUE
 uchar send_http_response(HTTPRequest *request, HTTPResponse *response) {
     char server_header[64];
     snprintf(server_header, sizeof(server_header), "Server: %s", GEONS_WEBSERVER_INFO);
@@ -280,6 +281,7 @@ HTTPServer *create_http_server(uchar *server_addr, ushort port, uchar *public_di
 
     size_t public_dir_path_size = MAX_SYS_PATH_LENGTH;
     uchar public_dir_path[public_dir_path_size];
+    memset(public_dir_path, 0, public_dir_path_size);
     if (!is_absolute_path(public_dir))
         get_cwd_path(public_dir_path, public_dir_path_size);
     strncat(public_dir_path, public_dir, strlen(public_dir));

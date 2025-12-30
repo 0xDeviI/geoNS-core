@@ -14,8 +14,7 @@
 uchar handle_node_info_exchange(Database *db, Node *source_node, 
     Node *destination_node, uchar remove_inactive_nodes);
 JSON_Value *construct_base_geonsp_message(uchar *geonsp_message);
-JSON_Value *construct_add_node_request(uchar *server_addr, 
-    ushort node_gateway_port);
+JSON_Value *construct_add_node_request(ushort node_gateway_port);
 JSON_Value *construct_get_nodes_request(void);
 JSON_Value *construct_client_hello_request(void);
 SocketServer *is_geons_host_available(uchar *server_addr, ushort node_gateway);

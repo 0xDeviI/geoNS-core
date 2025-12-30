@@ -1,4 +1,5 @@
 #include "table.h"
+#include <stdio.h>
 
 Table GEONS_LEDGER_DB_TABLES[] = {
     {
@@ -139,7 +140,7 @@ char get_all_active_nodes(Database *db, Node **nodes, uchar size_of_nodes) {
         uchar id = sqlite3_column_int(stmt, 0);
         uchar *server_addr = (uchar *) sqlite3_column_text(stmt, 1);
         ushort node_gateway = sqlite3_column_int(stmt, 2);
-        uchar *status = (uchar *) sqlite3_column_text(stmt, 4);
+        uchar *status = (uchar *) sqlite3_column_text(stmt, 3);
         strncpy(node->server_addr, server_addr, sizeof(node->server_addr) - 1);
         node->server_addr[strlen(node->server_addr)] = '\0';
         strncpy(node->status, status, sizeof(node->status) - 1);
